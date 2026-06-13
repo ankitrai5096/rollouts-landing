@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rollout — Every party photo, one place</title>
+  <title>Rollout : Group Event Photo Sharing</title>
   <meta name="description" content="Scan one QR code at the party. Every photo from every phone syncs live — see them appear in real time as people shoot." />
 
   <!-- OG / social -->
-  <meta property="og:title" content="Rollout — Every party photo, one place" />
+  <meta property="og:title" content="Rollout : Group Event Photo Sharing" />
   <meta property="og:description" content="Scan one QR at the party. Every photo from every phone syncs live." />
   <meta property="og:type" content="website" />
 
@@ -74,8 +74,10 @@
     }
     .nav__logo {
       display: flex; align-items: center; gap: 10px;
-      font-size: 18px; font-weight: 700; color: var(--primary); text-decoration: none;
+      text-decoration: none; color: var(--primary);
     }
+    .nav__logo-name { font-size: 18px; font-weight: 800; line-height: 1.1; }
+    .nav__logo-tag  { font-size: 10px; font-weight: 500; color: var(--sub); letter-spacing: .3px; }
     .nav__logo-icon {
       width: 34px; height: 34px; background: var(--primary); border-radius: 9px;
       display: flex; align-items: center; justify-content: center; font-size: 18px;
@@ -441,7 +443,10 @@
   <div class="nav__inner">
     <a class="nav__logo" href="#">
       <div class="nav__logo-icon"><i data-lucide="camera"></i></div>
-      Rollout
+      <div>
+        <div class="nav__logo-name">Rollout</div>
+        <div class="nav__logo-tag">Group Event Photo Sharing</div>
+      </div>
     </a>
     <a class="nav__cta" href="#waitlist">Get Early Access</a>
   </div>
@@ -795,7 +800,7 @@
 
 <!-- ─── Footer ─── -->
 <footer class="footer">
-  <p>Rollout — Every party photo, one place.</p>
+  <p>Rollout : Group Event Photo Sharing</p>
   <p style="margin-top:8px">Made with ❤️ in India</p>
 </footer>
 
