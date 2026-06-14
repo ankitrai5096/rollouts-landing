@@ -988,7 +988,8 @@
     }
     phoneError.classList.remove('show');
     submitBtn.disabled = true; submitBtn.innerHTML = 'Adding you…';
-    try {
+
+    async function attempt() {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 10000);
       const res = await fetch('https://groupsnap-backend-production.up.railway.app/waitlist', {
@@ -1000,6 +1001,17 @@
       if (!res.ok) throw new Error('server');
       let data = {};
       try { data = await res.json(); } catch {}
+      return data;
+    }
+
+    try {
+      let data;
+      try {
+        data = await attempt();
+      } catch {
+        await new Promise(r => setTimeout(r, 2000));
+        data = await attempt();
+      }
       formEl.classList.add('hide'); successBox.classList.add('show');
       if (data.message === 'already registered') {
         document.querySelector('.success-title').textContent = "You're already registered.";
