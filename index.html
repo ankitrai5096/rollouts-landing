@@ -142,20 +142,20 @@
       filter: drop-shadow(0 32px 60px rgba(0,0,0,.7)) drop-shadow(0 0 36px rgba(91,79,217,.28));
     }
     .iphone-frame {
-      background: linear-gradient(155deg, #3A3A3C 0%, #1C1C1E 30%, #2C2C2E 60%, #1A1A1C 100%);
+      background: linear-gradient(155deg, #C9C9CE 0%, #9A9AA0 30%, #BCBCC2 60%, #929298 100%);
       border-radius: 42px;
       padding: 7px;
       position: relative;
       box-shadow:
-        inset 0 0 0 0.5px rgba(255,255,255,.12),
-        inset 0 2px 3px rgba(255,255,255,.08),
-        0 0 0 0.5px rgba(0,0,0,.6);
+        inset 0 0 0 0.5px rgba(255,255,255,.55),
+        inset 0 2px 3px rgba(255,255,255,.35),
+        0 0 0 0.5px rgba(0,0,0,.2);
     }
     /* Side buttons */
-    .iphone-mute    { position:absolute; left:-3px; top:72px;  width:3px; height:24px; background:#2A2A2C; border-radius:2px 0 0 2px; }
-    .iphone-vol-up  { position:absolute; left:-3px; top:108px; width:3px; height:36px; background:#2A2A2C; border-radius:2px 0 0 2px; }
-    .iphone-vol-down{ position:absolute; left:-3px; top:154px; width:3px; height:36px; background:#2A2A2C; border-radius:2px 0 0 2px; }
-    .iphone-power   { position:absolute; right:-3px;top:118px; width:3px; height:52px; background:#2A2A2C; border-radius:0 2px 2px 0; }
+    .iphone-mute    { position:absolute; left:-3px; top:72px;  width:3px; height:24px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-vol-up  { position:absolute; left:-3px; top:108px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-vol-down{ position:absolute; left:-3px; top:154px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-power   { position:absolute; right:-3px;top:118px; width:3px; height:52px; background:#888890; border-radius:0 2px 2px 0; }
     /* USB-C */
     .iphone-usbc {
       position:absolute; bottom:7px; left:50%; transform:translateX(-50%);
@@ -192,6 +192,10 @@
       content:''; position:absolute; right:-3.5px; top:50%; transform:translateY(-50%);
       width:2px; height:5px; background:var(--text); border-radius:0 1px 1px 0;
     }
+    .iphone-home-bar {
+      width: 38%; height: 5px; background: rgba(0,0,0,.22);
+      border-radius: 3px; margin: 8px auto 10px; flex-shrink: 0;
+    }
     .iphone-battery::after {
       content:''; position:absolute; left:1.5px; top:1.5px; bottom:1.5px; right:4px;
       background:var(--text); border-radius:1px;
@@ -209,6 +213,21 @@
     .live-indicator { display: flex; align-items: center; gap: 3px; margin-left: auto; flex-shrink: 0; }
     .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #22C55E; animation: pulse 1.2s ease-in-out infinite; }
     .live-text { font-size: 7.5px; font-weight: 800; color: #22C55E; letter-spacing: .6px; }
+
+    .screen-tabs {
+      display: flex; justify-content: space-evenly; flex-shrink: 0;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 2px;
+    }
+    .screen-tab {
+      text-align: center; font-size: 9px; font-weight: 600;
+      color: var(--sub); padding: 6px 6px 7px; position: relative;
+    }
+    .screen-tab.active { color: var(--primary); }
+    .screen-tab.active::after {
+      content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+      height: 2px; background: var(--primary); border-radius: 1px 1px 0 0;
+    }
 
     .notif-host { height: 0; position: relative; overflow: visible; z-index: 10; flex-shrink: 0; }
     .phone-toast {
@@ -412,8 +431,16 @@
     .demo-scene { min-height: 0; }
 
     /* Hero fills full viewport, phone peeks from the bottom */
-    .hero { min-height: 100svh; padding: 88px 0 0; }
-    .hero__title { margin-bottom: 24px; }
+    .hero { min-height: 100svh; padding: 88px 0 52px; }
+    /* Bigger tabs on mobile */
+    .screen-tab { font-size: 13px; padding: 10px 0 11px; }
+    /* Bigger toast on mobile */
+    .phone-toast { padding: 7px 14px 7px 7px; }
+    .phone-toast__dot   { width: 30px; height: 30px; font-size: 11px; }
+    .phone-toast__label { font-size: 12px; }
+    .phone-toast__thumb { width: 30px; height: 30px; border-radius: 8px; }
+    .hero__title { margin-bottom: 24px; font-size: clamp(32px, 8.5vw, 68px); letter-spacing: -0.5px; line-height: 1.12; word-spacing: 2px; }
+    .hero__title em { color: #fff; opacity: .32; font-style: normal; display: block; margin-top: 20px; }
     .hero__sub   { margin-bottom: 44px; }
     .hero__demo-wrap { margin-top: 72px; }
     .iphone-wrap { width: 88%; }
@@ -448,6 +475,9 @@
       .hero { padding: 80px 0 0; }
       .demo-scene { min-height: 440px; }
       .hero { min-height: 0; }
+      .screen-tab { font-size: 9px; padding: 6px 0 7px; }
+      .hero__title { font-size: clamp(36px, 10vw, 68px); }
+      .hero__title em { color: var(--accent); opacity: 1; display: inline; margin-top: 0; }
       .hero__demo-wrap { margin-top: 48px; }
       .iphone-wrap { width: 220px; }
       .mob-caption { display: none; }
@@ -469,11 +499,11 @@
 <section class="hero">
   <div class="container">
     <h1 class="hero__title">
-      Every photo taken.<br/>Every photo of you.<br/><em>Live.</em>
+      Every photo taken<br/>at your <span class="hero__word" id="heroWord">party.</span><br/><em>finds you, live.</em>
     </h1>
 
     <p class="hero__sub">
-      Scan one QR at your <span class="hero__word" id="heroWord">party</span>. Every photo from every phone syncs live — and face detection finds every shot of you across the whole group.
+      Scan one QR. Every photo from every phone syncs live — and face detection finds every shot of you across the whole group.
     </p>
 
     <a href="#waitlist" class="btn-primary">
@@ -490,8 +520,6 @@
             <div class="iphone-vol-up"></div>
             <div class="iphone-vol-down"></div>
             <div class="iphone-power"></div>
-            <div class="iphone-usbc"></div>
-
             <div class="iphone-screen">
               <div class="dynamic-island"></div>
               <div class="iphone-status">
@@ -513,8 +541,14 @@
                   <span class="live-text">LIVE</span>
                 </div>
               </div>
+              <div class="screen-tabs">
+                <div class="screen-tab active">All</div>
+                <div class="screen-tab">People</div>
+                <div class="screen-tab">Your Photos</div>
+              </div>
               <div class="notif-host" id="inPhoneNotif"></div>
               <div class="photo-grid" id="demoGrid"></div>
+              <div class="iphone-home-bar"></div>
             </div>
           </div>
         </div>
@@ -701,7 +735,7 @@
     const el = document.getElementById('heroWord');
     if (!el) return;
     el.style.animation = 'none'; void el.offsetHeight;
-    el.textContent = OCCASIONS[_wordIdx];
+    el.textContent = OCCASIONS[_wordIdx] + '.';
     el.style.animation = 'wordIn .4s cubic-bezier(.34,1.56,.64,1)';
   }, 2400);
 
