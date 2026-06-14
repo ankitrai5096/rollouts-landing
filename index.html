@@ -251,7 +251,7 @@
     }
     .demo-hint [data-lucide] { width: 13px; height: 13px; stroke: var(--accent); stroke-width: 2.5; fill: none; flex-shrink: 0; }
 
-    /* ─── Problem ─── */
+    /* ─── Shared section typography ─── */
     .overline {
       font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
       color: var(--primary); margin-bottom: 8px; display: block;
@@ -262,58 +262,45 @@
     }
     .section-sub { font-size: 15px; color: var(--sub); max-width: 520px; }
 
-    .problem__row {
-      display: flex; gap: 12px;
-      overflow-x: auto; scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch; scrollbar-width: none;
-      margin: 28px -20px 0; padding: 4px 20px 16px;
+    /* ─── Problem — editorial numbered list ─── */
+    .prob-list { margin-top: 36px; }
+    .prob-item {
+      display: grid; grid-template-columns: 52px 1fr; gap: 0 8px;
+      padding: 20px 0; border-top: 1px solid var(--border); align-items: start;
     }
-    .problem__row::-webkit-scrollbar { display: none; }
-    .problem__card {
-      min-width: 240px; flex-shrink: 0; scroll-snap-align: start;
-      background: var(--bg); border-radius: var(--r-lg); padding: 20px;
-      border: 1px solid var(--border);
+    .prob-item:last-child { border-bottom: 1px solid var(--border); }
+    .prob-num {
+      font-size: 56px; font-weight: 900; color: var(--primary);
+      opacity: .1; line-height: .85; letter-spacing: -4px;
     }
-    .problem__icon { margin-bottom: 12px; }
-    .problem__icon [data-lucide] { width: 24px; height: 24px; stroke: var(--primary); stroke-width: 1.8; fill: none; }
-    .problem__title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-    .problem__body  { font-size: 13px; color: var(--sub); line-height: 1.55; }
+    .prob-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.3px; padding-top: 4px; }
+    .prob-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
 
-    /* ─── Steps ─── */
-    .steps { margin-top: 32px; display: flex; flex-direction: column; }
-    .step {
-      display: flex; align-items: flex-start; gap: 16px;
-      padding: 20px 0; border-bottom: 1px solid var(--border);
+    /* ─── Steps — ghost number accent ─── */
+    .flow-list { margin-top: 36px; }
+    .flow-item {
+      display: grid; grid-template-columns: 52px 1fr; gap: 0 8px;
+      padding: 20px 0; border-top: 1px solid var(--border); align-items: start;
     }
-    .step:last-child { border-bottom: none; }
-    .step__num {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: var(--primary); color: #fff;
-      font-size: 17px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    .flow-item:last-child { border-bottom: 1px solid var(--border); }
+    .flow-num {
+      font-size: 56px; font-weight: 900; color: var(--primary);
+      opacity: .1; line-height: .85; letter-spacing: -4px;
     }
-    .step__title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .step__body  { font-size: 13px; color: var(--sub); }
+    .flow-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; letter-spacing: -.3px; padding-top: 4px; }
+    .flow-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
 
-    /* ─── Features ─── */
-    .features__list {
-      margin-top: 32px; border: 1px solid var(--border);
-      border-radius: var(--r-lg); overflow: hidden;
+    /* ─── Features — plain icon + text, no boxes ─── */
+    .feat-list { margin-top: 36px; }
+    .feat-item {
+      display: flex; gap: 18px; align-items: flex-start;
+      padding: 22px 0; border-top: 1px solid var(--border);
     }
-    .feature {
-      display: flex; align-items: flex-start; gap: 14px;
-      padding: 20px; background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-    .feature:last-child { border-bottom: none; }
-    .feature__icon {
-      width: 42px; height: 42px; border-radius: var(--r-md);
-      background: var(--primary-light);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .feature__icon [data-lucide] { width: 22px; height: 22px; stroke: var(--primary); stroke-width: 1.8; fill: none; }
-    .feature__title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
-    .feature__body  { font-size: 13px; color: var(--sub); line-height: 1.5; }
+    .feat-item:last-child { border-bottom: 1px solid var(--border); }
+    .feat-icon { flex-shrink: 0; padding-top: 2px; }
+    .feat-icon [data-lucide] { width: 20px; height: 20px; stroke: var(--primary); stroke-width: 2; fill: none; }
+    .feat-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; letter-spacing: -.3px; }
+    .feat-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
 
     /* ─── Waitlist ─── */
     .waitlist {
@@ -429,11 +416,11 @@
       .iphone-wrap { width: 220px; }
       .sender-stream { display: block; }
       .waitlist__flag { padding: 0 18px; }
-      .problem__row { flex-wrap: wrap; overflow-x: visible; margin: 28px 0 0; padding: 4px 0 16px; }
-      .problem__card { min-width: 0; flex: 1; }
-      .features__list { display: grid; grid-template-columns: 1fr 1fr 1fr; border-radius: var(--r-lg); }
-      .feature { border-bottom: none; border-right: 1px solid var(--border); }
-      .feature:last-child { border-right: none; }
+      .prob-item { padding: 24px 0; }
+      .feat-list { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
+      .feat-item { border-top: none; flex-direction: column; gap: 10px; padding: 32px 28px 32px 0; border-right: 1px solid var(--border); border-bottom: none; }
+      .feat-item:nth-child(2) { padding: 32px 28px; }
+      .feat-item:last-child { border-right: none; border-bottom: none; padding-left: 28px; }
     }
   </style>
 </head>
@@ -448,11 +435,11 @@
     </div>
 
     <h1 class="hero__title">
-      Every photo.<br/>Every phone.<br/><em>Right now.</em>
+      Every photo taken.<br/>Every photo of you.<br/><em>Live.</em>
     </h1>
 
     <p class="hero__sub">
-      Scan one QR at your <span class="hero__word" id="heroWord">party</span>. Every photo anyone takes appears in one shared album the moment it's shot.
+      Scan one QR at your <span class="hero__word" id="heroWord">party</span>. Every photo from every phone syncs live — and face detection finds every shot of you across the whole group.
     </p>
 
     <a href="#waitlist" class="btn-primary">
@@ -513,23 +500,29 @@
   <div class="container">
     <span class="overline">The problem</span>
     <h2 class="section-title fade-up">100 photos were taken.<br/>You saw 3.</h2>
-    <p class="section-sub fade-up">Scattered across 20 different phones. Some make it to the group chat. Most sit there, unseen, forever.</p>
+    <p class="section-sub fade-up">They're scattered across everyone's phones. Most will never make it to you.</p>
 
-    <div class="problem__row">
-      <div class="problem__card fade-up">
-        <div class="problem__icon"><i data-lucide="message-circle"></i></div>
-        <div class="problem__title">"Who has the photos?"</div>
-        <div class="problem__body">You ask in the group. 3 people reply. The one with the best shots never does.</div>
+    <div class="prob-list">
+      <div class="prob-item fade-up">
+        <span class="prob-num">1</span>
+        <div>
+          <div class="prob-title">"Who has the photos?"</div>
+          <div class="prob-body">You ask in the group. Three people reply. The one with the best shots? Silent forever.</div>
+        </div>
       </div>
-      <div class="problem__card fade-up">
-        <div class="problem__icon"><i data-lucide="image-off"></i></div>
-        <div class="problem__title">WhatsApp kills quality</div>
-        <div class="problem__body">Full-res originals become pixelated thumbnails you'd be embarrassed to post.</div>
+      <div class="prob-item fade-up">
+        <span class="prob-num">2</span>
+        <div>
+          <div class="prob-title">WhatsApp kills the quality</div>
+          <div class="prob-body">Full-res originals become pixelated thumbnails you'd be embarrassed to post anywhere.</div>
+        </div>
       </div>
-      <div class="problem__card fade-up">
-        <div class="problem__icon"><i data-lucide="eye-off"></i></div>
-        <div class="problem__title">Candids you'll never see</div>
-        <div class="problem__body">Someone got a perfect shot of you. It's sitting on their phone. You'll probably never know.</div>
+      <div class="prob-item fade-up">
+        <span class="prob-num">3</span>
+        <div>
+          <div class="prob-title">Candids you'll never see</div>
+          <div class="prob-body">Someone got a perfect shot of you. It's on their phone. You'll probably never know it exists.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -540,28 +533,28 @@
 <section class="section" id="how-it-works">
   <div class="container">
     <span class="overline">How it works</span>
-    <h2 class="section-title fade-up">One QR. Three seconds. Done.</h2>
+    <h2 class="section-title fade-up">Set up in 10 seconds.<br/>Photos for a lifetime.</h2>
 
-    <div class="steps">
-      <div class="step fade-up">
-        <div class="step__num">1</div>
+    <div class="flow-list">
+      <div class="flow-item fade-up">
+        <span class="flow-num">1</span>
         <div>
-          <div class="step__title">Anyone creates a room</div>
-          <div class="step__body">Name the event, tap create. A shareable QR code appears instantly.</div>
+          <div class="flow-title">Anyone creates a room</div>
+          <div class="flow-body">Name the event, tap create. A shareable QR code appears instantly — no signup, no settings.</div>
         </div>
       </div>
-      <div class="step fade-up">
-        <div class="step__num">2</div>
+      <div class="flow-item fade-up">
+        <span class="flow-num">2</span>
         <div>
-          <div class="step__title">Everyone scans at the event</div>
-          <div class="step__body">No account, no app install needed. Scan and you're in — in under 5 seconds.</div>
+          <div class="flow-title">Everyone scans at the event</div>
+          <div class="flow-body">Show the QR. Friends scan it. They're in — no account, no app install, in under 5 seconds.</div>
         </div>
       </div>
-      <div class="step fade-up">
-        <div class="step__num">3</div>
+      <div class="flow-item fade-up">
+        <span class="flow-num">3</span>
         <div>
-          <div class="step__title">Photos appear the moment they're taken</div>
-          <div class="step__body">Every shot from every phone lands live in the shared room — while you're all still there.</div>
+          <div class="flow-title">Photos appear as they're taken</div>
+          <div class="flow-body">Every shot from every phone lands in the shared room live — while you're all still together.</div>
         </div>
       </div>
     </div>
@@ -572,29 +565,29 @@
 <!-- ─── Features ─── -->
 <section class="section section--white">
   <div class="container">
-    <span class="overline">What makes it different</span>
-    <h2 class="section-title fade-up">Built for the moment, not after it</h2>
+    <span class="overline">Why Rollout</span>
+    <h2 class="section-title fade-up">Built for the moment,<br/>not after it</h2>
 
-    <div class="features__list">
-      <div class="feature fade-up">
-        <div class="feature__icon"><i data-lucide="zap"></i></div>
+    <div class="feat-list">
+      <div class="feat-item fade-up">
+        <div class="feat-icon"><i data-lucide="zap"></i></div>
         <div>
-          <div class="feature__title">Live sync, no waiting</div>
-          <div class="feature__body">Photos appear while the event is still happening. Not "I'll send them later."</div>
+          <div class="feat-title">Live sync, no waiting</div>
+          <div class="feat-body">Photos appear while the event is still happening. Not "I'll send them later" — that text never gets a reply.</div>
         </div>
       </div>
-      <div class="feature fade-up">
-        <div class="feature__icon"><i data-lucide="scan-face"></i></div>
+      <div class="feat-item fade-up">
+        <div class="feat-icon"><i data-lucide="scan-face"></i></div>
         <div>
-          <div class="feature__title">Find every photo you're in</div>
-          <div class="feature__body">On-device face detection groups all photos of you — across every phone in the group.</div>
+          <div class="feat-title">Find every photo you're in</div>
+          <div class="feat-body">On-device face detection finds all photos of you — across every phone in the group. One tap.</div>
         </div>
       </div>
-      <div class="feature fade-up">
-        <div class="feature__icon"><i data-lucide="user-check"></i></div>
+      <div class="feat-item fade-up">
+        <div class="feat-icon"><i data-lucide="user-check"></i></div>
         <div>
-          <div class="feature__title">Zero friction to join</div>
-          <div class="feature__body">No account needed. Scan the QR, upload your photos. That's it.</div>
+          <div class="feat-title">Zero friction for everyone</div>
+          <div class="feat-body">No account needed to join. Scan the QR, upload photos. The bar to participate is basically nothing.</div>
         </div>
       </div>
     </div>
@@ -605,7 +598,6 @@
 <!-- ─── Waitlist ─── -->
 <section class="waitlist" id="waitlist">
   <div class="container">
-    <div class="waitlist__eyebrow"><span class="pill-dot"></span> Rolling out soon</div>
     <h2 class="waitlist__title">Get your photos live —<br/>while you're still there</h2>
     <p class="waitlist__sub">Drop your number. One text when you're off the waitlist. No spam.</p>
 
@@ -704,7 +696,7 @@
       host.innerHTML = '';
       const n = document.createElement('div');
       n.className = 'phone-toast';
-      n.innerHTML = `<div class="phone-toast__dot">${s.init}</div><span class="phone-toast__label">${s.name} added a photo</span><div class="phone-toast__thumb" style="background:${s.color}"></div>`;
+      n.innerHTML = `<div class="phone-toast__dot">${s.init}</div><span class="phone-toast__label">${s.name} added a photo to the group</span><div class="phone-toast__thumb" style="background:${s.color}"></div>`;
       host.appendChild(n);
       setTimeout(() => n.parentNode && n.parentNode.removeChild(n), 2900);
     }
