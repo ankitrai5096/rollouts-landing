@@ -986,12 +986,17 @@
       phoneError.textContent = `Please enter a valid ${selected.digits}-digit number.`;
       phoneError.classList.add('show'); phoneInput.focus(); return;
     }
+    phoneError.classList.remove('show');
     submitBtn.disabled = true; submitBtn.innerHTML = 'Adding you…';
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
       const res = await fetch('https://groupsnap-backend-production.up.railway.app/waitlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: selected.code + num }),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
       if (!res.ok) throw new Error();
       const data = await res.json();
       formEl.classList.add('hide'); successBox.classList.add('show');
@@ -999,11 +1004,13 @@
         document.querySelector('.success-title').textContent = "You're already registered.";
         document.querySelector('.success-body').textContent  = "We already have your number. We'll text you as soon as you're off the waitlist.";
       }
-    } catch {
+    } catch (err) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = 'Get Early Access <i data-lucide="arrow-right"></i>';
-      lucide.createIcons();
-      phoneError.textContent = 'Something went wrong — please try again.';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      phoneError.textContent = err && err.name === 'AbortError'
+        ? 'Request timed out — check your connection and try again.'
+        : 'Something went wrong — please try again.';
       phoneError.classList.add('show');
     }
   });
