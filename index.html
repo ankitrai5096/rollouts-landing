@@ -43,13 +43,13 @@
     .hero {
       padding: 56px 0 0;
       text-align: center;
-      background: linear-gradient(180deg, #0E0A24 0%, #1A1040 55%, #2B1860 100%);
-      color: #fff; position: relative; overflow: hidden;
+      background: var(--bg);
+      color: var(--text); position: relative; overflow: hidden;
     }
     .hero::before {
       content: ''; position: absolute;
       width: 500px; height: 500px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(167,139,250,.16) 0%, transparent 65%);
+      background: radial-gradient(circle, rgba(91,79,217,.08) 0%, transparent 65%);
       top: -160px; left: 50%; transform: translateX(-50%);
       pointer-events: none;
     }
@@ -69,15 +69,15 @@
 
     .hero__title {
       font-size: clamp(36px, 10vw, 68px); font-weight: 900; line-height: 1.05;
-      letter-spacing: -2px; color: #fff;
+      letter-spacing: -2px; color: var(--text);
       max-width: 700px; margin: 0 auto 18px;
     }
     .hero__title em { color: var(--accent); font-style: normal; }
     .hero__sub {
-      font-size: clamp(15px, 2.5vw, 18px); color: rgba(255,255,255,.65);
+      font-size: clamp(15px, 2.5vw, 18px); color: var(--sub);
       max-width: 440px; margin: 0 auto 32px; line-height: 1.65;
     }
-    .hero__word { color: var(--accent); display: inline-block; }
+    .hero__word { color: var(--primary); display: inline-block; }
     @keyframes wordIn { 0%{ opacity:0; transform:translateY(12px); } 100%{ opacity:1; transform:translateY(0); } }
 
     .btn-primary {
@@ -100,7 +100,7 @@
     .demo-scene::before {
       content: ''; position: absolute;
       width: 280px; height: 280px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(91,79,217,.22) 0%, transparent 65%);
+      background: radial-gradient(circle, rgba(91,79,217,.08) 0%, transparent 65%);
       pointer-events: none;
     }
 
@@ -110,10 +110,11 @@
     }
     .sender-toast {
       position: absolute; display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,.12); backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,.18); border-radius: 40px;
+      background: rgba(255,255,255,.85); backdrop-filter: blur(12px);
+      border: 1px solid rgba(91,79,217,.15); border-radius: 40px;
       padding: 6px 12px 6px 6px;
-      font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap;
+      font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(91,79,217,.12);
     }
     .sender-toast.left  { right: calc(50% + 128px); animation: toastL 3.4s ease forwards; }
     .sender-toast.right { left:  calc(50% + 128px); animation: toastR 3.4s ease forwards; }
@@ -139,7 +140,7 @@
     /* Modern iPhone frame */
     .iphone-wrap {
       position: relative; width: 200px; z-index: 2;
-      filter: drop-shadow(0 32px 60px rgba(0,0,0,.7)) drop-shadow(0 0 36px rgba(91,79,217,.28));
+      filter: drop-shadow(0 24px 48px rgba(91,79,217,.22)) drop-shadow(0 4px 16px rgba(0,0,0,.1));
     }
     .iphone-frame {
       background: linear-gradient(155deg, #C9C9CE 0%, #9A9AA0 30%, #BCBCC2 60%, #929298 100%);
@@ -162,7 +163,7 @@
       width:38px; height:5px; background:rgba(0,0,0,.22); border-radius:3px;
     }
     .iphone-screen {
-      background: var(--bg); border-radius: 36px; overflow: hidden;
+      background: var(--surface); border-radius: 36px; overflow: hidden;
       aspect-ratio: 9/19.5; display: flex; flex-direction: column;
       box-shadow: inset 0 0 0 0.5px rgba(0,0,0,.08);
     }
@@ -263,10 +264,10 @@
     .photo-cell--arriving { animation: photoArrive .4s cubic-bezier(.34,1.56,.64,1) forwards; }
 
     .demo-hint {
-      padding: 14px 0 20px; font-size: 13px; color: rgba(255,255,255,.4);
+      padding: 14px 0 20px; font-size: 13px; color: var(--sub);
       display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center;
     }
-    .demo-hint [data-lucide] { width: 13px; height: 13px; stroke: var(--accent); stroke-width: 2.5; fill: none; flex-shrink: 0; }
+    .demo-hint [data-lucide] { width: 13px; height: 13px; stroke: var(--primary); stroke-width: 2.5; fill: none; flex-shrink: 0; }
 
     /* ─── Shared section typography ─── */
     .overline {
@@ -440,7 +441,7 @@
     .phone-toast__label { font-size: 12px; }
     .phone-toast__thumb { width: 30px; height: 30px; border-radius: 8px; }
     .hero__title { margin-bottom: 24px; font-size: clamp(32px, 8.5vw, 68px); letter-spacing: -0.5px; line-height: 1.12; word-spacing: 2px; }
-    .hero__title em { color: #fff; opacity: .32; font-style: normal; display: block; margin-top: 20px; }
+    .hero__title em { color: var(--text); opacity: .28; font-style: normal; display: block; margin-top: 8px; font-size: .82em; }
     .hero__sub   { margin-bottom: 44px; }
     .hero__demo-wrap { margin-top: 72px; }
     .iphone-wrap { width: 88%; }
@@ -727,15 +728,23 @@
   }, { threshold: 0.1, rootMargin: '0px 0px -24px 0px' });
   document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
 
-  // Rotating word
-  const OCCASIONS = ['party', 'road trip', 'wedding', 'trek', 'reunion', 'concert'];
+  // Rotating word with per-word color
+  const OCCASIONS = [
+    { word: 'party',     color: '#F97316' },
+    { word: 'road trip', color: '#0891B2' },
+    { word: 'wedding',   color: '#E11D48' },
+    { word: 'trek',      color: '#16A34A' },
+    { word: 'reunion',   color: '#7C3AED' },
+    { word: 'concert',   color: '#DC2626' },
+  ];
   let _wordIdx = 0;
   setInterval(() => {
     _wordIdx = (_wordIdx + 1) % OCCASIONS.length;
     const el = document.getElementById('heroWord');
     if (!el) return;
     el.style.animation = 'none'; void el.offsetHeight;
-    el.textContent = OCCASIONS[_wordIdx] + '.';
+    el.textContent = OCCASIONS[_wordIdx].word + '.';
+    el.style.color   = OCCASIONS[_wordIdx].color;
     el.style.animation = 'wordIn .4s cubic-bezier(.34,1.56,.64,1)';
   }, 2400);
 
