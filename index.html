@@ -88,6 +88,18 @@
       box-shadow: 0 4px 24px rgba(91,79,217,.5);
     }
     .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .hero__ctas {
+      display: inline-flex; flex-direction: column; align-items: stretch;
+      gap: 12px;
+    }
+    .btn-secondary {
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; color: var(--primary);
+      border: 2px solid var(--primary); border-radius: var(--r-full);
+      padding: 14px 30px; font-size: 16px; font-weight: 700;
+      text-decoration: none; transition: background .2s, color .2s;
+    }
+    .btn-secondary:hover { background: var(--primary); color: #fff; }
     .btn-primary [data-lucide] { width: 16px; height: 16px; stroke: #fff; stroke-width: 2.5; fill: none; }
 
     /* ─── Phone demo ─── */
@@ -321,70 +333,57 @@
     .feat-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
 
     /* ─── Waitlist ─── */
-    .waitlist {
-      background: linear-gradient(150deg, #12092E 0%, #2D1B69 100%);
-      color: #fff; padding: 72px 0;
-    }
+    .waitlist { background: var(--bg); color: var(--text); padding: 72px 0; border-top: 1px solid var(--border); }
     .waitlist .container { text-align: center; }
-    .waitlist__eyebrow {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14);
-      color: rgba(255,255,255,.85); font-size: 12px; font-weight: 600;
-      letter-spacing: .5px; text-transform: uppercase;
-      padding: 5px 14px; border-radius: var(--r-full); margin-bottom: 20px;
-    }
     .waitlist__title {
       font-size: clamp(26px, 6vw, 44px); font-weight: 800;
-      line-height: 1.15; margin-bottom: 12px;
+      line-height: 1.15; margin-bottom: 10px; letter-spacing: -.5px;
     }
-    .waitlist__sub { font-size: 16px; opacity: .7; max-width: 400px; margin: 0 auto 40px; }
+    .waitlist__sub { font-size: 15px; color: var(--sub); max-width: 380px; margin: 0 auto 36px; }
 
-    .waitlist__form  { max-width: 460px; margin: 0 auto; }
-    .waitlist__input-row { display: flex; flex-direction: row; align-items: stretch; gap: 10px; margin-bottom: 14px; }
+    .waitlist__form  { max-width: 440px; margin: 0 auto; }
+    .waitlist__input-row { display: flex; flex-direction: row; align-items: stretch; gap: 8px; margin-bottom: 10px; }
     .country-picker { display: flex; position: relative; }
     .waitlist__flag {
-      background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.25);
+      background: var(--surface); border: 2px solid var(--border);
       border-radius: var(--r-md); padding: 0 14px;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; white-space: nowrap; color: #fff;
+      cursor: pointer; white-space: nowrap; color: var(--text);
       gap: 6px; font-size: 15px; font-weight: 600; height: 54px;
     }
-    .waitlist__flag [data-lucide] { width: 14px; height: 14px; stroke: rgba(255,255,255,.6); stroke-width: 2.5; fill: none; transition: transform .2s; }
+    .waitlist__flag [data-lucide] { width: 14px; height: 14px; stroke: var(--sub); stroke-width: 2.5; fill: none; transition: transform .2s; }
     .waitlist__flag.open [data-lucide] { transform: rotate(180deg); }
     .waitlist__input {
-      flex: 1; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.25);
-      border-radius: var(--r-md); padding: 16px 14px; font-size: 17px; color: #fff;
+      flex: 1; background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--r-md); padding: 16px 14px; font-size: 17px; color: var(--text);
       outline: none; height: 54px; min-width: 0;
     }
-    .waitlist__input::placeholder { color: rgba(255,255,255,.4); }
-    .waitlist__input:focus { border-color: rgba(255,255,255,.6); background: rgba(255,255,255,.16); }
+    .waitlist__input::placeholder { color: #9CA3AF; }
+    .waitlist__input:focus { border-color: var(--primary); }
     .waitlist__btn {
-      width: 100%; background: #fff; color: var(--primary);
+      width: 100%; background: var(--primary); color: #fff;
       border: none; border-radius: var(--r-md); padding: 16px;
       font-size: 16px; font-weight: 800; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: transform .15s, box-shadow .2s;
-      box-shadow: 0 4px 24px rgba(0,0,0,.25);
+      transition: transform .15s, background .2s;
+      box-shadow: 0 4px 24px rgba(91,79,217,.35);
     }
-    .waitlist__btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,.3); }
+    .waitlist__btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
     .waitlist__btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-    .waitlist__btn [data-lucide] { width: 18px; height: 18px; stroke: var(--primary); stroke-width: 2.5; fill: none; }
-    .waitlist__trust {
-      margin-top: 14px; font-size: 13px; opacity: .55;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .waitlist__trust [data-lucide] { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2; fill: none; }
+    .waitlist__btn [data-lucide] { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.5; fill: none; }
 
     .waitlist__success {
       display: none; text-align: center; padding: 36px;
-      background: rgba(255,255,255,.08); border-radius: var(--r-xl);
-      border: 1px solid rgba(255,255,255,.18);
+      background: var(--primary-light); border-radius: var(--r-xl);
+      border: 1px solid rgba(91,79,217,.15);
     }
     .waitlist__success.show { display: block; }
     .waitlist__form.hide    { display: none; }
-    .success-icon [data-lucide] { width: 52px; height: 52px; stroke: #fff; stroke-width: 1.5; fill: none; margin: 0 auto 16px; display: block; }
+    .waitlist__trust { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; font-size: 13px; color: var(--sub); }
+    .waitlist__trust [data-lucide] { width: 13px; height: 13px; stroke: var(--sub); stroke-width: 2.5; fill: none; flex-shrink: 0; }
+    .success-icon [data-lucide] { width: 52px; height: 52px; stroke: var(--primary); stroke-width: 1.5; fill: none; margin: 0 auto 16px; display: block; }
     .success-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
-    .success-body  { font-size: 16px; opacity: .75; }
+    .success-body  { font-size: 16px; color: var(--sub); }
 
     .field-error { color: #FFB3B3; font-size: 13px; margin-top: -6px; margin-bottom: 10px; text-align: left; display: none; }
     .field-error.show { display: block; }
@@ -507,9 +506,12 @@
       Scan one QR. Every photo from every phone syncs live — and face detection finds every shot of you across the whole group.
     </p>
 
-    <a href="#waitlist" class="btn-primary">
-      Join the Waitlist <i data-lucide="arrow-right"></i>
-    </a>
+    <div class="hero__ctas">
+      <a href="#waitlist" class="btn-primary">
+        Join the Waitlist <i data-lucide="arrow-right"></i>
+      </a>
+      <a href="#how-it-works" class="btn-secondary">Want to know more?</a>
+    </div>
 
     <div class="hero__demo-wrap fade-up">
       <div class="demo-scene">
@@ -679,7 +681,7 @@
 <!-- ─── Waitlist ─── -->
 <section class="waitlist" id="waitlist">
   <div class="container">
-    <h2 class="waitlist__title">Get your photos live —<br/>while you're still there</h2>
+    <h2 class="waitlist__title">Stop missing photos<br/>of yourself.</h2>
     <p class="waitlist__sub">Drop your number. One text when you're off the waitlist. No spam.</p>
 
     <div class="waitlist__form" id="waitlistForm">
