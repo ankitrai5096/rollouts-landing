@@ -992,7 +992,7 @@
     async function attempt() {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch('https://groupsnap-backend-production.up.railway.app/waitlist', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: selected.code + num }),
         signal: controller.signal,
