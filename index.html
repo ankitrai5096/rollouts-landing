@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rollout : Group Event Photo Sharing</title>
-  <meta name="description" content="Scan one QR at your next event. Every photo from every phone syncs live — parties, road trips, weddings, treks." />
+  <meta name="description" content="Scan one QR at your next event. Every photo from every phone syncs live, parties, road trips, weddings, treks." />
   <meta property="og:title" content="Rollout : Group Event Photo Sharing" />
-  <meta property="og:description" content="Scan one QR. Every photo from every phone syncs live — parties, trips, weddings, any group event." />
+  <meta property="og:description" content="Scan one QR. Every photo from every phone syncs live, parties, trips, weddings, any group event." />
   <meta property="og:type" content="website" />
 
   <style>
@@ -292,7 +292,7 @@
     }
     .section-sub { font-size: 15px; color: var(--sub); max-width: 520px; }
 
-    /* ─── Problem — editorial numbered list ─── */
+    /* ─── Problem,editorial numbered list ─── */
     .prob-list { margin-top: 36px; }
     .prob-item {
       display: grid; grid-template-columns: 52px 1fr; gap: 0 8px;
@@ -306,7 +306,7 @@
     .prob-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.3px; padding-top: 4px; }
     .prob-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
 
-    /* ─── Steps — ghost number accent ─── */
+    /* ─── Steps,ghost number accent ─── */
     .flow-list { margin-top: 36px; }
     .flow-item {
       display: grid; grid-template-columns: 52px 1fr; gap: 0 8px;
@@ -320,7 +320,7 @@
     .flow-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; letter-spacing: -.3px; padding-top: 4px; }
     .flow-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
 
-    /* ─── Features — plain icon + text, no boxes ─── */
+    /* ─── Features,plain icon + text, no boxes ─── */
     .feat-list { margin-top: 36px; }
     .feat-item {
       display: flex; gap: 18px; align-items: flex-start;
@@ -445,7 +445,7 @@
     .hero__demo-wrap { margin-top: 72px; }
     .iphone-wrap { width: 88%; }
 
-    /* Face detection caption — below the screen, mobile only */
+    /* Face detection caption,below the screen, mobile only */
     .mob-caption {
       min-height: 52px; display: flex; align-items: center; justify-content: center;
       padding: 14px 20px 0;
@@ -503,7 +503,7 @@
     </h1>
 
     <p class="hero__sub">
-      Scan one QR. Every photo from every phone syncs live — and face detection finds every shot of you across the whole group.
+      Scan one QR. Every photo from every phone syncs live, and face detection finds every shot of you across the whole group.
     </p>
 
     <div class="hero__ctas">
@@ -571,7 +571,7 @@
 
       <p class="demo-hint">
         <i data-lucide="zap"></i>
-        <span>Photos from 5 phones — syncing live while the trip is still happening</span>
+        <span>Photos from 5 phones,syncing live while the trip is still happening</span>
       </p>
     </div>
   </div>
@@ -623,21 +623,21 @@
         <span class="flow-num">1</span>
         <div>
           <div class="flow-title">Anyone creates a room</div>
-          <div class="flow-body">Name the event, tap create. A shareable QR code appears instantly — no signup, no settings.</div>
+          <div class="flow-body">Name the event, tap create. A shareable QR code appears instantly, no signup, no settings.</div>
         </div>
       </div>
       <div class="flow-item fade-up">
         <span class="flow-num">2</span>
         <div>
           <div class="flow-title">Everyone scans at the event</div>
-          <div class="flow-body">Show the QR. Friends scan it. They're in — no account, no app install, in under 5 seconds.</div>
+          <div class="flow-body">Show the QR. Friends scan it. They're in, no account, no app install, in under 5 seconds.</div>
         </div>
       </div>
       <div class="flow-item fade-up">
         <span class="flow-num">3</span>
         <div>
           <div class="flow-title">Photos appear as they're taken</div>
-          <div class="flow-body">Every shot from every phone lands in the shared room live — while you're all still together.</div>
+          <div class="flow-body">Every shot from every phone lands in the shared room live, while you're all still together.</div>
         </div>
       </div>
     </div>
@@ -656,14 +656,14 @@
         <div class="feat-icon"><i data-lucide="zap"></i></div>
         <div>
           <div class="feat-title">Live sync, no waiting</div>
-          <div class="feat-body">Photos appear while the event is still happening. Not "I'll send them later" — that text never gets a reply.</div>
+          <div class="feat-body">Photos appear while the event is still happening. Not "I'll send them later", that text never gets a reply.</div>
         </div>
       </div>
       <div class="feat-item fade-up">
         <div class="feat-icon"><i data-lucide="scan-face"></i></div>
         <div>
           <div class="feat-title">Find every photo you're in</div>
-          <div class="feat-body">On-device face detection finds all photos of you — across every phone in the group. One tap.</div>
+          <div class="feat-body">On-device face detection finds all photos of you, across every phone in the group. One tap.</div>
         </div>
       </div>
       <div class="feat-item fade-up">
@@ -781,7 +781,7 @@
     const stream = document.getElementById('senderStream');
     if (!grid || !stream) return;
 
-    // In-phone pill toast — flips from "added a picture" → "X & Y are in this"
+    // In-phone pill toast,flips from "added a picture" → "X & Y are in this"
     const host = document.getElementById('inPhoneNotif');
     if (host) {
       host.innerHTML = '';
@@ -849,13 +849,13 @@
         if (e('demoSubtitle')) e('demoSubtitle').textContent = `${nev.members} people · 0 photos`;
         if (e('demoGrid'))     e('demoGrid').innerHTML       = '';
         const h = document.querySelector('.demo-hint span');
-        if (h) h.textContent = `Photos from ${nev.members} phones — syncing live while the event is still happening`;
+        if (h) h.textContent = `Photos from ${nev.members} phones,syncing live while the event is still happening`;
       }, 600);
     }
   }
   setInterval(_tick, 3000);
 
-  // Mobile card demo tick — slower to let each story beat land
+  // Mobile card demo tick,slower to let each story beat land
   let _mob_dc = 0, _mob_di = 0, _mob_si = 0;
   function _mobTick() {
     const ev = DEMO_EVENTS[_mob_di];
@@ -1023,8 +1023,8 @@
       if (typeof lucide !== 'undefined') lucide.createIcons();
       const isNetworkErr = err && (err.name === 'AbortError' || err.name === 'TypeError' || err.message === 'Failed to fetch');
       phoneError.textContent = isNetworkErr
-        ? 'Bad network — please check your connection and try again.'
-        : 'Something went wrong — please try again.';
+        ? 'Bad network,please check your connection and try again.'
+        : 'Something went wrong,please try again.';
       phoneError.classList.add('show');
     }
   });
