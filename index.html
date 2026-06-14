@@ -997,8 +997,9 @@
         signal: controller.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      if (!res.ok) throw new Error('server');
+      let data = {};
+      try { data = await res.json(); } catch {}
       formEl.classList.add('hide'); successBox.classList.add('show');
       if (data.message === 'already registered') {
         document.querySelector('.success-title').textContent = "You're already registered.";
@@ -1008,8 +1009,9 @@
       submitBtn.disabled = false;
       submitBtn.innerHTML = 'Get Early Access <i data-lucide="arrow-right"></i>';
       if (typeof lucide !== 'undefined') lucide.createIcons();
-      phoneError.textContent = err && err.name === 'AbortError'
-        ? 'Request timed out — check your connection and try again.'
+      const isNetworkErr = err && (err.name === 'AbortError' || err.name === 'TypeError' || err.message === 'Failed to fetch');
+      phoneError.textContent = isNetworkErr
+        ? 'Bad network — please check your connection and try again.'
         : 'Something went wrong — please try again.';
       phoneError.classList.add('show');
     }
