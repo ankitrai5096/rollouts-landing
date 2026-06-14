@@ -218,13 +218,11 @@
       display: flex; align-items: center; gap: 5px;
       pointer-events: none;
       box-shadow: 0 4px 16px rgba(0,0,0,.3);
-      animation: phoneToast 2.8s ease forwards;
+      animation: phoneToast 0.45s cubic-bezier(.34,1.56,.64,1) forwards;
     }
     @keyframes phoneToast {
-      0%   { opacity:0; transform:translateY(-10px) scale(.95); }
-      12%  { opacity:1; transform:translateY(0) scale(1); }
-      74%  { opacity:1; transform:translateY(0) scale(1); }
-      100% { opacity:0; transform:translateY(-8px) scale(.97); }
+      0%   { opacity:0; transform:translateY(-12px) scale(.92); }
+      100% { opacity:1; transform:translateY(0) scale(1); }
     }
     .phone-toast__dot {
       width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff;
@@ -408,13 +406,91 @@
 
     [data-lucide] { display: block; flex-shrink: 0; }
 
+    /* ─── Mobile: frameless full-bleed app screen ─── */
+    .mob-demo  { display: none; }
+    .demo-hint { display: none; }
+    .demo-scene { min-height: 0; }
+
+    /* Bleed past container padding so screen is edge-to-edge */
+    .hero__demo-wrap { margin-left: -20px; margin-right: -20px; }
+
+    /* Strip the titanium frame entirely */
+    .iphone-wrap  { width: 100%; filter: none; }
+    .iphone-frame { background: none; padding: 0; box-shadow: none; border-radius: 0; }
+    .iphone-mute, .iphone-vol-up, .iphone-vol-down, .iphone-power, .iphone-usbc { display: none; }
+    .dynamic-island { display: none; }
+    .iphone-status  { display: none; }
+    .hero          { padding-bottom: 36px; }
+    .iphone-screen {
+      border-radius: 20px; aspect-ratio: auto;
+      min-height: 540px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.06);
+    }
+    /* Scale up text and toast at full width */
+    .phone-toast { left: 12px; right: 12px; padding: 7px 12px 7px 7px; }
+    .phone-toast__label { font-size: 13px; }
+    .phone-toast__dot   { width: 30px; height: 30px; font-size: 12px; }
+    .phone-toast__thumb { width: 30px; height: 30px; border-radius: 8px; }
+    .screen-header { padding: 12px 16px; }
+    .screen-emoji  { font-size: 20px; }
+    .screen-title  { font-size: 15px; }
+    .screen-sub    { font-size: 12px; }
+    .live-dot      { width: 7px; height: 7px; }
+    .live-text     { font-size: 10px; }
+    .photo-grid    { gap: 2px; padding: 2px; }
+
+    /* Face detection caption — below the screen, mobile only */
+    .mob-caption {
+      min-height: 52px; display: flex; align-items: center; justify-content: center;
+      padding: 14px 20px 0;
+    }
+    .mob-cap-pill {
+      display: inline-flex; align-items: center; gap: 9px;
+      color: rgba(255,255,255,.8); font-size: 15px; font-weight: 600;
+      animation: capIn .35s ease forwards; white-space: nowrap;
+    }
+    .mob-cap-pill span { white-space: nowrap; }
+    .mob-cap-avs { display: flex; flex-shrink: 0; }
+    .mob-cap-av {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: #1C1B1F;
+      border: 2px solid rgba(14,10,36,.25); margin-left: -7px;
+    }
+    .mob-cap-av:first-child { margin-left: 0; }
+    @keyframes capIn {
+      from { opacity:0; transform: translateY(8px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
     /* ─── Desktop ─── */
     @media(min-width: 641px) {
       .section { padding: 80px 0; }
       .hero { padding: 80px 0 0; }
       .demo-scene { min-height: 440px; }
-      .iphone-wrap { width: 220px; }
+      /* Restore normal margins, hero padding, hide mobile-only elements */
+      .hero { padding-bottom: 0; }
+      .mob-caption { display: none; }
+      .hero__demo-wrap { margin-left: 0; margin-right: 0; }
+      .iphone-wrap  { width: 220px; filter: drop-shadow(0 32px 60px rgba(0,0,0,.7)) drop-shadow(0 0 36px rgba(91,79,217,.28)); }
+      .iphone-frame { background: linear-gradient(155deg, #C9C9CE 0%, #9A9AA0 30%, #BCBCC2 60%, #929298 100%); border-radius: 42px; padding: 7px; box-shadow: inset 0 0 0 0.5px rgba(255,255,255,.55), inset 0 2px 3px rgba(255,255,255,.35), 0 0 0 0.5px rgba(0,0,0,.2); }
+      .iphone-mute, .iphone-vol-up, .iphone-vol-down, .iphone-power, .iphone-usbc { display: block; }
+      .dynamic-island { display: block; }
+      .iphone-status  { display: flex; }
+      .iphone-screen  { border-radius: 36px; aspect-ratio: 9/19.5; min-height: 0; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,.08); }
+      .phone-toast { left: 6px; right: 6px; padding: 4px 8px 4px 4px; }
+      .phone-toast__label { font-size: 9px; }
+      .phone-toast__dot   { width: 22px; height: 22px; font-size: 8px; }
+      .phone-toast__thumb { width: 22px; height: 22px; border-radius: 5px; }
+      .screen-header { padding: 6px 10px; }
+      .screen-emoji  { font-size: 14px; }
+      .screen-title  { font-size: 10px; }
+      .screen-sub    { font-size: 8.5px; }
+      .live-dot      { width: 5px; height: 5px; }
+      .live-text     { font-size: 7.5px; }
+      .photo-grid    { gap: 1px; padding: 1px; }
       .sender-stream { display: block; }
+      .demo-hint { display: flex; }
       .waitlist__flag { padding: 0 18px; }
       .prob-item { padding: 24px 0; }
       .feat-list { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
@@ -430,10 +506,6 @@
 <!-- ─── Hero ─── -->
 <section class="hero">
   <div class="container">
-    <div class="hero__eyebrow">
-      <span class="pill-dot"></span> Early Access — Limited spots
-    </div>
-
     <h1 class="hero__title">
       Every photo taken.<br/>Every photo of you.<br/><em>Live.</em>
     </h1>
@@ -482,6 +554,18 @@
               <div class="notif-host" id="inPhoneNotif"></div>
               <div class="photo-grid" id="demoGrid"></div>
             </div>
+          </div>
+        </div>
+
+        <!-- Mobile card demo -->
+        <div class="mob-demo" id="mobDemo">
+          <div class="mob-pill" id="mobPill"></div>
+          <div class="mob-card" id="mobCard">
+            <div class="mob-face-badge" id="mobFace"></div>
+          </div>
+          <div class="mob-counter">
+            <span class="mob-live-dot"></span>
+            <span id="mobCounter">0 photos · 5 people</span>
           </div>
         </div>
       </div>
@@ -661,23 +745,23 @@
 
   // Live photo demo
   const DEMO_EVENTS = [
-    { name: 'Goa Trip 2025',    icon: '✈️', members: 5, senders: [
-      { name: 'Priya',  init: 'P', color: '#D1FAE5' },
-      { name: 'Rohan',  init: 'R', color: '#DDD6FE' },
-      { name: 'Arjun',  init: 'A', color: '#FDE8D0' },
-      { name: 'Meera',  init: 'M', color: '#DBEAFE' },
+    { name: 'Goa Trip 2025', icon: '✈️', members: 5, senders: [
+      { name: 'Priya',  init: 'P', color: '#D1FAE5', faces: [{ name: 'Rohan', init: 'R', color: '#DDD6FE' }, { name: 'Arjun', init: 'A', color: '#FDE8D0' }] },
+      { name: 'Rohan',  init: 'R', color: '#DDD6FE', faces: [{ name: 'Priya', init: 'P', color: '#D1FAE5' }] },
+      { name: 'Arjun',  init: 'A', color: '#FDE8D0', faces: [{ name: 'Meera', init: 'M', color: '#DBEAFE' }, { name: 'Priya', init: 'P', color: '#D1FAE5' }] },
+      { name: 'Meera',  init: 'M', color: '#DBEAFE', faces: [{ name: 'Rohan', init: 'R', color: '#DDD6FE' }] },
     ]},
     { name: "Arushi's Wedding", icon: '💍', members: 8, senders: [
-      { name: 'Divya',  init: 'D', color: '#FCE7F3' },
-      { name: 'Anika',  init: 'A', color: '#FEF3C7' },
-      { name: 'Simran', init: 'S', color: '#E0E7FF' },
-      { name: 'Neha',   init: 'N', color: '#ECFDF5' },
+      { name: 'Divya',  init: 'D', color: '#FCE7F3', faces: [{ name: 'Anika', init: 'A', color: '#FEF3C7' }, { name: 'Simran', init: 'S', color: '#E0E7FF' }] },
+      { name: 'Anika',  init: 'A', color: '#FEF3C7', faces: [{ name: 'Divya', init: 'D', color: '#FCE7F3' }] },
+      { name: 'Simran', init: 'S', color: '#E0E7FF', faces: [{ name: 'Neha', init: 'N', color: '#ECFDF5' }, { name: 'Anika', init: 'A', color: '#FEF3C7' }] },
+      { name: 'Neha',   init: 'N', color: '#ECFDF5', faces: [{ name: 'Simran', init: 'S', color: '#E0E7FF' }] },
     ]},
-    { name: 'Spiti Trek 2025',  icon: '🏔️', members: 6, senders: [
-      { name: 'Vikram', init: 'V', color: '#DBEAFE' },
-      { name: 'Dev',    init: 'D', color: '#D1FAE5' },
-      { name: 'Sam',    init: 'S', color: '#FDE8D0' },
-      { name: 'Raj',    init: 'R', color: '#FEE2E2' },
+    { name: 'Spiti Trek 2025', icon: '🏔️', members: 6, senders: [
+      { name: 'Vikram', init: 'V', color: '#DBEAFE', faces: [{ name: 'Dev', init: 'D', color: '#D1FAE5' }, { name: 'Sam', init: 'S', color: '#FDE8D0' }] },
+      { name: 'Dev',    init: 'D', color: '#D1FAE5', faces: [{ name: 'Vikram', init: 'V', color: '#DBEAFE' }] },
+      { name: 'Sam',    init: 'S', color: '#FDE8D0', faces: [{ name: 'Raj', init: 'R', color: '#FEE2E2' }, { name: 'Dev', init: 'D', color: '#D1FAE5' }] },
+      { name: 'Raj',    init: 'R', color: '#FEE2E2', faces: [{ name: 'Sam', init: 'S', color: '#FDE8D0' }] },
     ]},
   ];
   const TOPS = ['16%', '44%', '68%'];
@@ -690,15 +774,41 @@
     const stream = document.getElementById('senderStream');
     if (!grid || !stream) return;
 
-    // In-phone pill toast
+    // In-phone pill toast — flips from "added a picture" → "X & Y are in this"
     const host = document.getElementById('inPhoneNotif');
     if (host) {
       host.innerHTML = '';
       const n = document.createElement('div');
       n.className = 'phone-toast';
-      n.innerHTML = `<div class="phone-toast__dot">${s.init}</div><span class="phone-toast__label">${s.name} added a photo to the group</span><div class="phone-toast__thumb" style="background:${s.color}"></div>`;
+      n.innerHTML = `<div class="phone-toast__dot">${s.init}</div><span class="phone-toast__label">${s.name} clicked a picture</span><div class="phone-toast__thumb" style="background:${s.color}"></div>`;
       host.appendChild(n);
-      setTimeout(() => n.parentNode && n.parentNode.removeChild(n), 2900);
+
+      // After 1s flip label: "added a picture" → "X & Y are in this"
+      if (s.faces && s.faces.length) {
+        setTimeout(() => {
+          const lbl = n.querySelector('.phone-toast__label');
+          if (!lbl || !n.parentNode) return;
+          // Slide up & out
+          lbl.style.transition = 'opacity .18s ease, transform .18s ease';
+          lbl.style.opacity = '0';
+          lbl.style.transform = 'translateY(-7px)';
+          setTimeout(() => {
+            if (!lbl.parentNode) return;
+            const fs    = s.faces.slice(0,2).map(f => f.name);
+            const who   = fs.length === 2 ? `${fs[0]} & ${fs[1]}` : fs[0];
+            lbl.textContent = `${who} are in this`;
+            // Reset below, then spring up into place
+            lbl.style.transition = 'none';
+            lbl.style.transform = 'translateY(7px)';
+            void lbl.offsetHeight;
+            lbl.style.transition = 'opacity .22s ease, transform .22s cubic-bezier(.34,1.56,.64,1)';
+            lbl.style.opacity = '1';
+            lbl.style.transform = 'translateY(0)';
+          }, 190);
+        }, 1000);
+      }
+
+      setTimeout(() => n.parentNode && n.parentNode.removeChild(n), 3100);
     }
 
     // Desktop sender toast
@@ -735,7 +845,53 @@
       }, 600);
     }
   }
-  setInterval(_tick, 1400);
+  setInterval(_tick, 3000);
+
+  // Mobile card demo tick — slower to let each story beat land
+  let _mob_dc = 0, _mob_di = 0, _mob_si = 0;
+  function _mobTick() {
+    const ev = DEMO_EVENTS[_mob_di];
+    const s  = ev.senders[_mob_si % ev.senders.length];
+    const pill = document.getElementById('mobPill');
+    const card = document.getElementById('mobCard');
+    const face = document.getElementById('mobFace');
+    const ctr  = document.getElementById('mobCounter');
+
+    if (pill) {
+      pill.className = 'mob-pill';
+      void pill.offsetHeight;
+      pill.innerHTML = `<div class="mob-avatar" style="background:${s.color}">${s.init}</div><span>${s.name} added a photo</span>`;
+      pill.className = 'mob-pill in';
+    }
+    if (card) {
+      card.className = 'mob-card';
+      if (face) face.className = 'mob-face-badge';
+      void card.offsetHeight;
+      card.style.backgroundColor = s.color;
+      card.className = 'mob-card in';
+      if (face && s.faces && s.faces.length) {
+        setTimeout(() => {
+          const avs   = s.faces.slice(0,2).map(f => `<div class="mob-face-av" style="background:${f.color}">${f.init}</div>`).join('');
+          const fs    = s.faces.slice(0,2).map(f => f.name);
+          const names = fs.length === 2 ? `${fs[0]} & ${fs[1]}` : fs[0];
+          face.innerHTML = `<div class="mob-face-avatars">${avs}</div><span class="mob-face-label">with ${names}</span>`;
+          face.className = 'mob-face-badge in';
+        }, 950);
+      }
+    }
+    _mob_dc++;
+    if (ctr) ctr.textContent = `${_mob_dc} photo${_mob_dc > 1 ? 's' : ''} · ${ev.members} people`;
+    _mob_si++;
+    if (_mob_si >= ev.senders.length * 3) {
+      setTimeout(() => {
+        _mob_di = (_mob_di + 1) % DEMO_EVENTS.length;
+        _mob_dc = 0; _mob_si = 0;
+        if (ctr) ctr.textContent = `0 photos · ${DEMO_EVENTS[_mob_di].members} people`;
+      }, 600);
+    }
+  }
+  _mobTick();
+  setInterval(_mobTick, 3000);
 
   // Country picker
   const COUNTRIES = [
