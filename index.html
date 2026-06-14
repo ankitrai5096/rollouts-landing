@@ -803,7 +803,8 @@
             if (!lbl.parentNode) return;
             const fs    = s.faces.slice(0,2).map(f => f.name);
             const who   = fs.length === 2 ? `${fs[0]} & ${fs[1]}` : fs[0];
-            lbl.textContent = `${who} are in this`;
+            const verb  = fs.length === 2 ? 'are' : 'is';
+            lbl.textContent = `${who} ${verb} in this`;
             // Reset below, then spring up into place
             lbl.style.transition = 'none';
             lbl.style.transform = 'translateY(7px)';
