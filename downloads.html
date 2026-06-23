@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download Rollout — Early Access</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #5B4FD9;
+      --primary-dark: #4a3fc7;
+      --accent: #A78BFA;
+      --bg: #F5F4FF;
+      --text: #1c1b1f;
+      --sub: #6B7280;
+      --border: rgba(91,79,217,.12);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 32px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 40px; height: 40px;
+      background: var(--primary);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-mark [data-lucide] { width: 20px; height: 20px; stroke: #fff; stroke-width: 2.5; fill: none; }
+    .logo-name { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -.5px; }
+
+    /* Card */
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 36px;
+      box-shadow: 0 1px 3px rgba(91,79,217,.06), 0 8px 32px rgba(91,79,217,.08);
+    }
+
+    /* Password gate */
+    #gate h1 {
+      font-size: 22px; font-weight: 800; letter-spacing: -.5px;
+      margin-bottom: 6px;
+    }
+    #gate p {
+      font-size: 14px; color: var(--sub); margin-bottom: 28px; line-height: 1.6;
+    }
+
+    .field label {
+      display: block; font-size: 13px; font-weight: 600; color: var(--sub);
+      margin-bottom: 8px; letter-spacing: .2px;
+    }
+    .field input {
+      width: 100%; padding: 14px 16px; font-size: 16px;
+      border: 2px solid var(--border); border-radius: 12px;
+      outline: none; background: var(--bg); color: var(--text);
+      transition: border-color .2s;
+      font-family: inherit;
+    }
+    .field input:focus { border-color: var(--primary); }
+    .field input.error { border-color: #EF4444; }
+
+    .err-msg {
+      font-size: 13px; color: #EF4444; margin-top: 8px;
+      display: none; align-items: center; gap: 6px;
+    }
+    .err-msg.show { display: flex; }
+    .err-msg [data-lucide] { width: 14px; height: 14px; stroke: #EF4444; fill: none; flex-shrink: 0; }
+
+    .btn {
+      width: 100%; margin-top: 20px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 12px;
+      padding: 15px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: background .2s, transform .15s;
+      font-family: inherit;
+    }
+    .btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .btn:active { transform: none; }
+
+    /* Download section */
+    #dl { display: none; }
+
+    .dl-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #D1FAE5; color: #065F46;
+      font-size: 12px; font-weight: 700; padding: 4px 12px;
+      border-radius: 20px; margin-bottom: 20px;
+      letter-spacing: .3px;
+    }
+    .dl-badge [data-lucide] { width: 12px; height: 12px; stroke: #065F46; fill: none; }
+
+    #dl h1 {
+      font-size: 22px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px;
+    }
+    #dl .sub {
+      font-size: 14px; color: var(--sub); line-height: 1.6; margin-bottom: 28px;
+    }
+
+    .build-meta {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .meta-item label {
+      font-size: 11px; font-weight: 700; color: var(--sub);
+      text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 3px;
+    }
+    .meta-item span { font-size: 14px; font-weight: 600; color: var(--text); }
+
+    .dl-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 16px;
+      background: var(--primary); color: #fff;
+      border-radius: 12px; text-decoration: none;
+      font-size: 16px; font-weight: 700;
+      transition: background .2s, transform .15s;
+    }
+    .dl-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .dl-btn [data-lucide] { width: 20px; height: 20px; stroke: #fff; fill: none; flex-shrink: 0; }
+
+    .install-note {
+      margin-top: 20px;
+      padding: 14px 16px;
+      background: #FEF9C3;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #713F12;
+      line-height: 1.6;
+      display: flex;
+      gap: 10px;
+    }
+    .install-note [data-lucide] { width: 16px; height: 16px; stroke: #92400E; fill: none; flex-shrink: 0; margin-top: 1px; }
+
+    .expiry {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--sub);
+    }
+    .expiry strong { color: #EF4444; }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <a href="index.html" class="logo">
+    <div class="logo-mark"><i data-lucide="camera"></i></div>
+    <span class="logo-name">Rollout</span>
+  </a>
+
+  <div class="card">
+
+    <!-- Password gate -->
+    <div id="gate">
+      <h1>Early Access Build</h1>
+      <p>This download is private. Enter your access code to continue.</p>
+      <div class="field">
+        <label>Access code</label>
+        <input type="password" id="pwInput" placeholder="Enter code" autocomplete="off" />
+        <div class="err-msg" id="errMsg">
+          <i data-lucide="alert-circle"></i>
+          <span>Incorrect code. Try again.</span>
+        </div>
+      </div>
+      <button class="btn" id="unlockBtn">Continue</button>
+    </div>
+
+    <!-- Download section -->
+    <div id="dl">
+      <div class="dl-badge"><i data-lucide="check-circle"></i> Unlocked</div>
+      <h1>Android Preview</h1>
+      <p class="sub">Internal build for early access testers. Install directly on your Android device.</p>
+
+      <div class="build-meta">
+        <div class="meta-item">
+          <label>Version</label>
+          <span>1.1.0 (build 1)</span>
+        </div>
+        <div class="meta-item">
+          <label>Platform</label>
+          <span>Android APK</span>
+        </div>
+        <div class="meta-item">
+          <label>Built</label>
+          <span>23 Jun 2026</span>
+        </div>
+        <div class="meta-item">
+          <label>Profile</label>
+          <span>Preview</span>
+        </div>
+      </div>
+
+      <a class="dl-btn" href="https://expo.dev/artifacts/eas/UQ-M8Hzug82nrA3pXE4PwrH8z66PCB4VrFLHEztqKvo.apk" download="Rollout-1.1.0-preview.apk">
+        <i data-lucide="download"></i>
+        Download APK (Android)
+      </a>
+
+      <div class="install-note">
+        <i data-lucide="info"></i>
+        <span>After downloading, go to <strong>Settings → Install unknown apps</strong> and allow your browser or file manager to install APKs.</span>
+      </div>
+
+      <p class="expiry">Build expires <strong>7 July 2026</strong></p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  const PASS = 'Earlyaccess';
+  const KEY  = 'rollout_dl_unlocked';
+
+  function unlock() {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('dl').style.display = 'block';
+    lucide.createIcons();
+    localStorage.setItem(KEY, '1');
+  }
+
+  // Auto-unlock if already unlocked
+  if (localStorage.getItem(KEY) === '1') unlock();
+
+  document.getElementById('unlockBtn').addEventListener('click', check);
+  document.getElementById('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+
+  function check() {
+    const val = document.getElementById('pwInput').value;
+    const input = document.getElementById('pwInput');
+    const err = document.getElementById('errMsg');
+    if (val === PASS) {
+      unlock();
+    } else {
+      input.classList.add('error');
+      err.classList.add('show');
+      input.focus();
+    }
+  }
+
+  document.getElementById('pwInput').addEventListener('input', () => {
+    document.getElementById('pwInput').classList.remove('error');
+    document.getElementById('errMsg').classList.remove('show');
+  });
+</script>
+</body>
+</html>
