@@ -247,11 +247,13 @@
       width:154px; z-index:2; margin-right:-22px; margin-bottom:-12px;
       animation:floatSideL 5.5s ease-in-out infinite;
       animation-delay:-.8s;
+      display:none;
     }
     .phone--hero-side-r {
       width:154px; z-index:2; margin-left:-22px; margin-bottom:-12px;
       animation:floatSideR 4.8s ease-in-out infinite;
       animation-delay:-2.1s;
+      display:none;
     }
     @keyframes floatMain  { 0%,100%{ transform:translateY(0) rotate(-1deg); } 50%{ transform:translateY(-22px) rotate(-1deg); } }
     @keyframes floatSideL { 0%,100%{ transform:translateY(-4px) rotate(-13deg); } 50%{ transform:translateY(-20px) rotate(-13deg); } }
@@ -418,6 +420,8 @@
     .sc-phone-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
     .sc-label { font-size:12px; font-weight:700; color:rgba(255,255,255,.38); letter-spacing:.3px; }
     .sc-phone { opacity:0; transform:translateY(48px); transition:opacity .65s ease, transform .65s ease; }
+    .showcase-phones > .sc-phone-wrap:first-child,
+    .showcase-phones > .sc-phone-wrap:last-child { display:none; }
     .sc-phone.in { opacity:1; transform:none; }
     .sc-phone:nth-child(1) { transition-delay:0s; }
     .phone--sc-main { width:170px; }
@@ -529,7 +533,7 @@
       .hero__stage { min-height:460px; }
       .stage-pill { display:flex; }
       .phone--hero-main { width:220px; }
-      .phone--hero-side-l,.phone--hero-side-r { width:170px; }
+      .phone--hero-side-l,.phone--hero-side-r { width:170px; display:block; }
       .phone--hero-side-l { margin-right:-28px; margin-bottom:-16px; }
       .phone--hero-side-r { margin-left:-28px; margin-bottom:-16px; }
 
@@ -538,7 +542,8 @@
       .phone--sc-main { width:200px; }
       .phone--sc-side { width:162px; }
       .showcase-phones > .sc-phone-wrap:first-child,
-      .showcase-phones > .sc-phone-wrap:last-child { margin-bottom:36px; }
+      .showcase-phones > .sc-phone-wrap:last-child { margin-bottom:36px; display:flex; }
+
       .phone--sc-side .iphone-frame { border-radius:38px; }
       .phone--sc-side .dynamic-island { width:86px; height:25px; }
 
