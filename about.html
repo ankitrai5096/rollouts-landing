@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About — Rollout</title>
+  <meta name="description" content="We built Rollout because we kept losing the best photos from our own trips." />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:       #5B4FD9;
+      --primary-light: #EEF2FF;
+      --accent:        #A78BFA;
+      --text:          #1C1B1F;
+      --sub:           #6B7280;
+      --border:        #F0EEF8;
+      --dark:          #0E0A24;
+      --r-md: 12px; --r-full: 999px;
+      --nav-h: 64px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F5F4FF; color: var(--text); line-height: 1.6; overflow-x: hidden; }
+    .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    [data-lucide] { display:block; flex-shrink:0; }
+
+    /* ─── Animations ─── */
+    .fade-up   { opacity:0; transform:translateY(20px); transition:opacity .5s ease,transform .5s ease; }
+    .fade-up.in { opacity:1; transform:none; }
+
+    /* ─── Nav ─── */
+    .nav { position:fixed; top:0; left:0; right:0; z-index:1000; height:var(--nav-h); transition:background .3s,box-shadow .3s; }
+    .nav--scrolled { background:rgba(245,244,255,.92); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); box-shadow:0 1px 0 rgba(91,79,217,.08); }
+    .nav__inner { display:flex; align-items:center; height:var(--nav-h); gap:8px; }
+    .nav__logo  { display:flex; align-items:center; gap:10px; text-decoration:none; flex-shrink:0; }
+    .nav__icon  { width:30px; height:30px; border-radius:8px; object-fit:cover; }
+    .nav__logo-text { font-size:18px; font-weight:800; color:var(--text); letter-spacing:-.5px; }
+    .nav__links { display:none; align-items:center; gap:2px; margin-left:auto; margin-right:12px; }
+    .nav__link  { padding:8px 14px; border-radius:var(--r-full); font-size:14px; font-weight:600; color:var(--sub); text-decoration:none; transition:color .2s,background .2s; }
+    .nav__link:hover { color:var(--text); background:rgba(91,79,217,.07); }
+    .nav__link.active { color:var(--primary); }
+    .nav__cta { flex-shrink:0; display:none; }
+    .nav__burger { display:flex; align-items:center; justify-content:center; margin-left:auto; width:40px; height:40px; border:none; background:transparent; cursor:pointer; border-radius:var(--r-md); transition:background .2s; }
+    .nav__burger:hover { background:rgba(91,79,217,.07); }
+    .nav__burger [data-lucide] { width:22px; height:22px; stroke:var(--text); stroke-width:2; fill:none; transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s; }
+    .nav__mobile { display:flex; flex-direction:column; gap:4px; padding:0 24px; background:rgba(245,244,255,.96); backdrop-filter:blur(20px); border-bottom:1px solid rgba(91,79,217,.08); max-height:0; overflow:hidden; opacity:0; transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s ease,padding .35s cubic-bezier(.4,0,.2,1); pointer-events:none; }
+    .nav__mobile.open { max-height:360px; padding:12px 24px 20px; opacity:1; pointer-events:auto; }
+    .nav__mobile-link { padding:12px 14px; border-radius:var(--r-md); font-size:16px; font-weight:600; color:var(--text); text-decoration:none; }
+    .btn-primary { background:var(--primary); color:#fff; border:none; border-radius:var(--r-full); padding:13px 26px; font-size:15px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition:background .2s,transform .15s,box-shadow .2s; box-shadow:0 4px 20px rgba(91,79,217,.36); }
+    .btn-primary:hover { background:#4338CA; transform:translateY(-2px); box-shadow:0 8px 32px rgba(91,79,217,.48); }
+    .btn-primary--sm { padding:10px 20px; font-size:14px; }
+    .btn-primary [data-lucide] { width:16px; height:16px; stroke:#fff; stroke-width:2.5; fill:none; }
+
+    /* ─── Page hero ─── */
+    .page-hero { padding: calc(var(--nav-h) + 80px) 0 72px; text-align:center; }
+    .page-hero__label { font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--primary); margin-bottom:14px; display:block; }
+    .page-hero__title { font-size:clamp(28px,5vw,48px); font-weight:900; line-height:1.08; letter-spacing:-2px; max-width:640px; margin:0 auto 18px; }
+    .page-hero__sub { font-size:clamp(15px,2.2vw,18px); color:var(--sub); max-width:440px; margin:0 auto; line-height:1.7; }
+
+    /* ─── White card ─── */
+    .card {
+      background:#fff; border-radius:20px; padding:56px 48px;
+      margin-bottom:16px;
+      box-shadow:0 1px 3px rgba(91,79,217,.06),0 4px 20px rgba(91,79,217,.04);
+    }
+    .card__label { font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--primary); display:block; margin-bottom:12px; }
+    .card__title { font-size:clamp(22px,4vw,34px); font-weight:800; letter-spacing:-.5px; line-height:1.15; margin-bottom:32px; }
+
+    /* ─── Story ─── */
+    .story-body { max-width:640px; font-size:17px; line-height:1.85; color:var(--text); }
+    .story-body p + p { margin-top:22px; }
+    .story-body strong { font-weight:800; }
+    .story-highlight {
+      margin:32px 0; padding:22px 26px;
+      background:var(--primary-light); border-left:4px solid var(--primary);
+      border-radius:0 12px 12px 0;
+      font-size:17px; font-weight:700; color:var(--primary); line-height:1.5;
+    }
+
+    /* ─── Mission cards ─── */
+    .mission-grid { display:grid; gap:12px; margin-top:4px; }
+    .mission-card {
+      background:#F5F4FF; border-radius:14px; padding:24px;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .mission-card__icon { width:44px; height:44px; border-radius:12px; background:var(--primary-light); display:flex; align-items:center; justify-content:center; }
+    .mission-card__icon [data-lucide] { width:20px; height:20px; stroke:var(--primary); stroke-width:2; fill:none; }
+    .mission-card__title { font-size:16px; font-weight:800; letter-spacing:-.2px; }
+    .mission-card__body  { font-size:14px; color:var(--sub); line-height:1.7; }
+
+    /* ─── Stats ─── */
+    .stats-card {
+      background:var(--primary); border-radius:20px; padding:56px 48px;
+      margin-bottom:16px; position:relative; overflow:hidden;
+    }
+    .stats-card::before { display:none; }
+    .stats-inner { position:relative; z-index:1; display:flex; flex-direction:column; gap:0; }
+    .astat { padding:28px 0; border-bottom:1px solid rgba(255,255,255,.18); text-align:center; }
+    .astat:last-child { border-bottom:none; }
+    .astat__num { font-size:52px; font-weight:900; color:#fff; letter-spacing:-2px; line-height:1; }
+    .astat__num em { color:var(--accent); font-style:normal; }
+    .astat__label { font-size:14px; color:rgba(255,255,255,.42); margin-top:8px; }
+
+    /* ─── Team ─── */
+    .team-grid { display:grid; gap:12px; margin-top:4px; }
+    .team-card {
+      background:#F5F4FF; border-radius:14px; padding:24px;
+      display:flex; gap:18px; align-items:flex-start;
+    }
+    .team-av { width:52px; height:52px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#fff; }
+    .team-name { font-size:17px; font-weight:800; margin-bottom:2px; }
+    .team-role { font-size:13px; color:var(--primary); font-weight:600; margin-bottom:8px; }
+    .team-bio  { font-size:14px; color:var(--sub); line-height:1.65; }
+
+    /* ─── Values ─── */
+    .values-list { display:flex; flex-direction:column; gap:0; margin-top:4px; }
+    .value-item { padding:28px 0; border-top:1px solid var(--border); display:flex; gap:20px; align-items:flex-start; }
+    .value-item:last-child { border-bottom:1px solid var(--border); }
+    .value-num { font-size:44px; font-weight:900; color:var(--primary); opacity:.12; line-height:.85; letter-spacing:-3px; flex-shrink:0; width:44px; }
+    .value-title { font-size:17px; font-weight:800; margin-bottom:6px; letter-spacing:-.2px; }
+    .value-body  { font-size:14px; color:var(--sub); line-height:1.7; }
+
+    /* ─── CTA ─── */
+    .cta-strip { padding:88px 0; text-align:center; background:var(--primary); position:relative; overflow:hidden; }
+    .cta-strip::before { display:none; }
+    .cta-strip .container { position:relative; z-index:1; }
+    .cta-strip__label { font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:rgba(255,255,255,.7); display:block; margin-bottom:14px; }
+    .cta-title { font-size:clamp(26px,5vw,42px); font-weight:800; letter-spacing:-.5px; line-height:1.12; margin-bottom:14px; color:#fff; }
+    .cta-sub   { font-size:16px; color:rgba(255,255,255,.65); margin-bottom:32px; }
+
+    /* ─── Footer ─── */
+    .footer { background:var(--primary); color:rgba(255,255,255,.65); padding:64px 0 36px; }
+    .footer__top { display:flex; flex-direction:column; gap:44px; padding-bottom:44px; border-bottom:1px solid rgba(255,255,255,.18); }
+    .footer__brand { display:flex; flex-direction:column; gap:12px; }
+    .footer__logo { display:flex; align-items:center; gap:10px; text-decoration:none; width:fit-content; }
+    .footer__logo-icon { width:30px; height:30px; border-radius:8px; object-fit:cover; }
+    .footer__logo-text { font-size:18px; font-weight:800; color:#fff; letter-spacing:-.5px; }
+    .footer__tagline { font-size:14px; color:rgba(255,255,255,.38); line-height:1.6; max-width:200px; }
+    .footer__cols { display:flex; flex-direction:column; gap:32px; }
+    .footer__col-title { font-size:12px; font-weight:700; color:#fff; letter-spacing:.8px; text-transform:uppercase; margin-bottom:16px; }
+    .footer__col-links { display:flex; flex-direction:column; gap:10px; }
+    .footer__col-link { font-size:14px; color:rgba(255,255,255,.42); text-decoration:none; transition:color .2s; }
+    .footer__col-link:hover { color:#fff; }
+    .footer__bottom { padding-top:28px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
+    .footer__copy   { font-size:13px; color:rgba(255,255,255,.22); }
+    .footer__legal  { display:flex; gap:20px; }
+    .footer__legal a { font-size:13px; color:rgba(255,255,255,.3); text-decoration:none; }
+    .footer__legal a:hover { color:rgba(255,255,255,.7); }
+
+    /* ─── Desktop ─── */
+    @media(min-width:641px) {
+      .nav__links { display:flex; }
+      .nav__burger { display:none; }
+      .nav__cta { display:inline-flex; }
+      .card { padding:72px 80px; }
+      .stats-card { padding:72px 80px; }
+      .mission-grid { grid-template-columns:1fr 1fr 1fr; }
+      .team-grid { grid-template-columns:1fr 1fr; }
+      .stats-inner { flex-direction:row; }
+      .astat { flex:1; border-bottom:none; border-right:1px solid rgba(255,255,255,.08); }
+      .astat:last-child { border-right:none; }
+      .footer__top { flex-direction:row; gap:64px; }
+      .footer__brand { flex:1.4; }
+      .footer__cols { flex:2; flex-direction:row; justify-content:space-between; gap:0; }
+      .footer__bottom { flex-direction:row; justify-content:space-between; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Nav ─── -->
+<nav class="nav" id="nav">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">
+      <img src="icon.png" alt="Rollout" class="nav__icon" />
+      <span class="nav__logo-text">Rollout</span>
+    </a>
+    <div class="nav__links">
+      <a href="index.html" class="nav__link">Home</a>
+      <a href="features.html" class="nav__link">Features</a>
+      <a href="how-it-works.html" class="nav__link">How it works</a>
+      <a href="about.html" class="nav__link active">About</a>
+    </div>
+    <a href="index.html#waitlist" class="btn-primary btn-primary--sm nav__cta">Get Early Access</a>
+    <button class="nav__burger" id="navBurger" aria-label="Open menu"><i data-lucide="menu"></i></button>
+  </div>
+  <div class="nav__mobile" id="navMobile">
+    <a href="index.html" class="nav__mobile-link">Home</a>
+    <a href="features.html" class="nav__mobile-link">Features</a>
+    <a href="how-it-works.html" class="nav__mobile-link">How it works</a>
+    <a href="about.html" class="nav__mobile-link">About</a>
+    <a href="index.html#waitlist" class="btn-primary" style="margin-top:8px">Get Early Access</a>
+  </div>
+</nav>
+
+
+<!-- ─── Page hero ─── -->
+<section class="page-hero">
+  <div class="container">
+    <span class="page-hero__label fade-up">Our story</span>
+    <h1 class="page-hero__title fade-up">I built Rollout because I was tired of waiting for photos that never came.</h1>
+    <p class="page-hero__sub fade-up">One party. One friend with all the best shots. One day later — a compressed WhatsApp dump.</p>
+  </div>
+</section>
+
+
+<div class="container">
+
+  <!-- ─── Story ─── -->
+  <div class="card fade-up">
+    <span class="card__label">How it started</span>
+    <p style="font-size:17px;line-height:1.85;color:var(--sub);max-width:640px">It started at a house party. One person had the best camera phone in the group — the candids they were getting were incredible. I asked them to share the photos that night. They said sure, just busy right now. I asked again the next morning. Still busy. The photos arrived a day later. Compressed. Sent over WhatsApp in a bulk dump. The moment was gone. Half the people at the party never even got them. I started asking around — friends, flatmates, people from other trips. Everyone had the exact same story. A different party, a different person, the same outcome. Photos stuck on one phone, never making it to the people in them. I looked at everything out there. Google Photos requires accounts. AirDrop only works between iPhones. WhatsApp destroys quality. iCloud albums lock out Android. Nothing just worked — for everyone, in the moment, without setup. So I built Rollout. Create a room, share a QR, everyone's photos sync live. No waiting. No asking. No compressed garbage a day later.</p>
+  </div>
+
+  <!-- ─── Mission ─── -->
+  <div class="card fade-up">
+    <span class="card__label">What drives us</span>
+    <h2 class="card__title">Three things we refuse to compromise on.</h2>
+    <div class="mission-grid">
+      <div class="mission-card">
+        <div class="mission-card__icon"><i data-lucide="clock"></i></div>
+        <div class="mission-card__title">In the moment</div>
+        <p class="mission-card__body">The experience has to work while you're still at the event — not later, when the moment is gone and the group chat is dead.</p>
+      </div>
+      <div class="mission-card">
+        <div class="mission-card__icon"><i data-lucide="users"></i></div>
+        <div class="mission-card__title">Zero barriers</div>
+        <p class="mission-card__body">If one person has to download an app or create an account, the whole system breaks. Everyone needs to join in 5 seconds flat.</p>
+      </div>
+      <div class="mission-card">
+        <div class="mission-card__icon"><i data-lucide="image"></i></div>
+        <div class="mission-card__title">Every photo</div>
+        <p class="mission-card__body">Not 40% of the photos, not compressed versions. Every single shot, from every single phone, in original quality — to everyone who was there.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+<div class="container">
+
+  <!-- ─── Values ─── -->
+  <div class="card fade-up">
+    <span class="card__label">How we work</span>
+    <h2 class="card__title">Principles we build by.</h2>
+    <div class="values-list">
+      <div class="value-item">
+        <span class="value-num">1</span>
+        <div>
+          <div class="value-title">Friction is the enemy</div>
+          <p class="value-body">Every extra tap, every account form, every permission screen is a reason someone won't use the product. We remove them obsessively until there's nothing left to remove.</p>
+        </div>
+      </div>
+      <div class="value-item">
+        <span class="value-num">2</span>
+        <div>
+          <div class="value-title">The moment doesn't wait</div>
+          <p class="value-body">We build for now, not later. "I'll share them after" is where photos go to die. Everything we build assumes you need it while the event is still happening.</p>
+        </div>
+      </div>
+      <div class="value-item">
+        <span class="value-num">3</span>
+        <div>
+          <div class="value-title">Quality is non-negotiable</div>
+          <p class="value-body">We will never compress a photo. The original file or nothing. This is a line we will not cross regardless of storage cost, bandwidth, or pressure to do otherwise.</p>
+        </div>
+      </div>
+      <div class="value-item">
+        <span class="value-num">4</span>
+        <div>
+          <div class="value-title">Privacy is the default</div>
+          <p class="value-body">Your photos are yours. Rooms are private, face data stays on-device, and we don't use your content to train anything. No fine print exceptions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Team ─── -->
+  <div class="card fade-up">
+    <span class="card__label">The team</span>
+    <h2 class="card__title">Small team. Big problem to solve.</h2>
+    <div class="team-grid">
+      <div class="team-card">
+        <div class="team-av" style="background:linear-gradient(135deg,var(--primary),var(--accent))">A</div>
+        <div>
+          <div class="team-name">Ankit Rai</div>
+          <div class="team-role">Founder</div>
+          <p class="team-bio">Designing and building Rollout from the ground up — product, engineering, and everything in between. Started with a personal frustration, now solving it for everyone.</p>
+        </div>
+      </div>
+      <div class="team-card">
+        <div class="team-av" style="background:linear-gradient(135deg,#0891B2,#7C3AED)">✉</div>
+        <div>
+          <div class="team-name">Work with us</div>
+          <div class="team-role">Open to collaborators</div>
+          <p class="team-bio">Interested in mobile, design, or growth? I'd love to hear from you.<br/><a href="mailto:contact.ankitrai08@gmail.com" style="color:var(--primary);font-weight:700;text-decoration:none">contact.ankitrai08@gmail.com</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ─── CTA ─── -->
+<section class="cta-strip">
+  <div class="container">
+    <span class="cta-strip__label">Join us</span>
+    <h2 class="cta-title fade-up">Help us bring every photo<br/>to every person in it.</h2>
+    <p class="cta-sub fade-up">Join the waitlist. One text when we're ready for you.</p>
+    <a href="index.html#waitlist" class="btn-primary fade-up">
+      Get Early Access <i data-lucide="arrow-right"></i>
+    </a>
+  </div>
+</section>
+
+
+<!-- ─── Footer ─── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="index.html" class="footer__logo">
+          <img src="icon.png" alt="Rollout" class="footer__logo-icon" />
+          <span class="footer__logo-text">Rollout</span>
+        </a>
+        <p class="footer__tagline">Every photo from every phone, found and synced, live.</p>
+      </div>
+      <div class="footer__cols">
+        <div>
+          <div class="footer__col-title">Product</div>
+          <div class="footer__col-links">
+            <a href="features.html" class="footer__col-link">Features</a>
+            <a href="how-it-works.html" class="footer__col-link">How it works</a>
+            <a href="index.html#waitlist" class="footer__col-link">Join waitlist</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer__col-title">Company</div>
+          <div class="footer__col-links">
+            <a href="about.html" class="footer__col-link">About</a>
+            <a href="mailto:contact.ankitrai08@gmail.com" class="footer__col-link">Contact</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer__col-title">Legal</div>
+          <div class="footer__col-links">
+            <a href="privacy-policy.html" class="footer__col-link">Privacy Policy</a>
+            <a href="terms.html" class="footer__col-link">Terms &amp; Conditions</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span class="footer__copy">© 2026 Rollout. All rights reserved.</span>
+      <div class="footer__legal">
+        <a href="privacy-policy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => nav.classList.toggle('nav--scrolled', window.scrollY > 20), {passive:true});
+  document.getElementById('navBurger').addEventListener('click', () => {
+    const mobile = document.getElementById('navMobile');
+    const isOpen = mobile.classList.toggle('open');
+    const icon = document.querySelector('#navBurger [data-lucide]');
+    icon.setAttribute('data-lucide', isOpen ? 'x' : 'menu');
+    lucide.createIcons();
+  });
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
+  }, {threshold:0.1, rootMargin:'0px 0px -20px 0px'});
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+  function easeOut(t){ return 1 - Math.pow(1-t, 3); }
+  const cObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target, to = +el.dataset.target;
+      if (to === 0) { el.textContent = '0'; cObs.unobserve(el); return; }
+      const dur = 1400, start = performance.now();
+      (function tick(now) {
+        const p = Math.min((now - start) / dur, 1);
+        el.textContent = Math.round(easeOut(p) * to) + (el.dataset.suffix || '');
+        if (p < 1) requestAnimationFrame(tick);
+      })(start);
+      cObs.unobserve(el);
+    });
+  }, {threshold:.5});
+  document.querySelectorAll('.counter').forEach(el => cObs.observe(el));
+</script>
+</body>
+</html>

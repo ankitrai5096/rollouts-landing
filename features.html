@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Features — Rollout</title>
+  <meta name="description" content="Live sync, face detection, zero friction — every feature built for the moment, not after it." />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:       #5B4FD9;
+      --primary-light: #EEF2FF;
+      --accent:        #A78BFA;
+      --text:          #1C1B1F;
+      --sub:           #6B7280;
+      --border:        #F0EEF8;
+      --dark:          #0E0A24;
+      --r-md: 12px; --r-full: 999px;
+      --nav-h: 64px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F5F4FF; color: var(--text); line-height: 1.6; overflow-x: hidden; }
+    .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    [data-lucide] { display: block; flex-shrink: 0; }
+
+    /* ─── Scroll animations ─── */
+    .fade-up   { opacity:0; transform:translateY(20px); transition:opacity .5s ease,transform .5s ease; }
+    .fade-left { opacity:0; transform:translateX(-24px); transition:opacity .55s ease,transform .55s ease; }
+    .fade-right{ opacity:0; transform:translateX(24px);  transition:opacity .55s ease,transform .55s ease; }
+    .fade-up.in,.fade-left.in,.fade-right.in { opacity:1; transform:none; }
+
+    /* ─── Nav ─── */
+    .nav { position:fixed; top:0; left:0; right:0; z-index:1000; height:var(--nav-h); transition:background .3s,box-shadow .3s; }
+    .nav--scrolled { background:rgba(245,244,255,.92); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); box-shadow:0 1px 0 rgba(91,79,217,.08); }
+    .nav__inner { display:flex; align-items:center; height:var(--nav-h); gap:8px; }
+    .nav__logo  { display:flex; align-items:center; gap:10px; text-decoration:none; flex-shrink:0; }
+    .nav__icon  { width:30px; height:30px; border-radius:8px; object-fit:cover; }
+    .nav__logo-text { font-size:18px; font-weight:800; color:var(--text); letter-spacing:-.5px; }
+    .nav__links { display:none; align-items:center; gap:2px; margin-left:auto; margin-right:12px; }
+    .nav__link  { padding:8px 14px; border-radius:var(--r-full); font-size:14px; font-weight:600; color:var(--sub); text-decoration:none; transition:color .2s,background .2s; }
+    .nav__link:hover { color:var(--text); background:rgba(91,79,217,.07); }
+    .nav__link.active { color:var(--primary); }
+    .nav__cta { flex-shrink:0; display:none; }
+    .nav__burger { display:flex; align-items:center; justify-content:center; margin-left:auto; width:40px; height:40px; border:none; background:transparent; cursor:pointer; border-radius:var(--r-md); transition:background .2s; }
+    .nav__burger:hover { background:rgba(91,79,217,.07); }
+    .nav__burger [data-lucide] { width:22px; height:22px; stroke:var(--text); stroke-width:2; fill:none; transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s; }
+    .nav__mobile { display:flex; flex-direction:column; gap:4px; padding:0 24px; background:rgba(255,255,255,.96); backdrop-filter:blur(20px); border-bottom:1px solid rgba(0,0,0,.06); max-height:0; overflow:hidden; opacity:0; transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s ease,padding .35s cubic-bezier(.4,0,.2,1); pointer-events:none; }
+    .nav__mobile.open { max-height:360px; padding:12px 24px 20px; opacity:1; pointer-events:auto; }
+    .nav__mobile-link { padding:12px 14px; border-radius:var(--r-md); font-size:16px; font-weight:600; color:var(--text); text-decoration:none; }
+    .btn-primary { background:var(--primary); color:#fff; border:none; border-radius:var(--r-full); padding:13px 26px; font-size:15px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition:background .2s,transform .15s,box-shadow .2s; box-shadow:0 4px 20px rgba(91,79,217,.36); }
+    .btn-primary:hover { background:#4338CA; transform:translateY(-2px); box-shadow:0 8px 32px rgba(91,79,217,.48); }
+    .btn-primary--sm { padding:10px 20px; font-size:14px; }
+    .btn-primary [data-lucide] { width:16px; height:16px; stroke:#fff; stroke-width:2.5; fill:none; }
+
+    /* ─── Page hero ─── */
+    .page-hero {
+      padding: calc(var(--nav-h) + 80px) 0 72px;
+      text-align: center;
+    }
+    .page-hero__label { font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--primary); margin-bottom:14px; display:block; }
+    .page-hero__title { font-size:clamp(32px,6vw,56px); font-weight:900; line-height:1.06; letter-spacing:-2px; max-width:600px; margin:0 auto 18px; }
+    .page-hero__sub { font-size:clamp(15px,2.2vw,18px); color:var(--sub); max-width:400px; margin:0 auto; line-height:1.7; }
+
+    /* ─── Feature rows ─── */
+    .features-list { padding:0 0 64px; }
+    .feature-row {
+      display:flex; flex-direction:column; gap:40px;
+      align-items:center;
+      padding:64px 48px;
+      background:#fff;
+      border-radius:20px;
+      margin-bottom:16px;
+      box-shadow:0 1px 3px rgba(91,79,217,.06),0 4px 20px rgba(91,79,217,.04);
+    }
+    .fr-text { display:flex; flex-direction:column; gap:14px; max-width:460px; }
+    .fr-icon { width:48px; height:48px; border-radius:14px; background:var(--primary-light); display:flex; align-items:center; justify-content:center; }
+    .fr-icon [data-lucide] { width:22px; height:22px; stroke:var(--primary); stroke-width:2; fill:none; }
+    .fr-title { font-size:clamp(22px,4vw,32px); font-weight:800; letter-spacing:-.5px; line-height:1.15; }
+    .fr-body  { font-size:16px; color:var(--sub); line-height:1.75; }
+    .fr-tags  { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .fr-tag   { font-size:12px; font-weight:600; color:var(--sub); background:#F5F4FF; border-radius:var(--r-full); padding:5px 12px; }
+    .fr-phone { display:flex; justify-content:center; }
+
+    /* ─── iPhone ─── */
+    .iphone-wrap { position:relative; }
+    .iphone-frame {
+      background:linear-gradient(155deg,#C9C9CE 0%,#9A9AA0 30%,#BCBCC2 60%,#929298 100%);
+      border-radius:42px; padding:7px; position:relative;
+      box-shadow:inset 0 0 0 .5px rgba(255,255,255,.55),inset 0 2px 3px rgba(255,255,255,.35),0 0 0 .5px rgba(0,0,0,.2),0 24px 64px rgba(0,0,0,.08),0 8px 24px rgba(91,79,217,.08);
+    }
+    .iphone-mute     { position:absolute; left:-3px; top:72px;  width:3px; height:24px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-vol-up   { position:absolute; left:-3px; top:108px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-vol-down { position:absolute; left:-3px; top:154px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-power    { position:absolute; right:-3px;top:118px; width:3px; height:52px; background:#888890; border-radius:0 2px 2px 0; }
+    .iphone-screen   { background:#fff; border-radius:36px; overflow:hidden; aspect-ratio:9/19.5; display:flex; flex-direction:column; box-shadow:inset 0 0 0 .5px rgba(0,0,0,.08); }
+    .iphone-screen--dark { background:#0E0A24; }
+    .dynamic-island  { width:100px; height:28px; background:#000; border-radius:18px; margin:10px auto 0; flex-shrink:0; }
+    .iphone-status   { display:flex; justify-content:space-between; align-items:center; padding:5px 16px; flex-shrink:0; }
+    .iphone-time     { font-size:9.5px; font-weight:700; color:var(--text); letter-spacing:-.3px; }
+    .iphone-icons    { display:flex; align-items:center; gap:4px; }
+    .iphone-signal   { display:flex; align-items:flex-end; gap:1px; }
+    .iphone-signal b { display:block; width:2.5px; background:var(--text); border-radius:1px; }
+    .iphone-signal b:nth-child(1){ height:4px; } .iphone-signal b:nth-child(2){ height:7px; } .iphone-signal b:nth-child(3){ height:10px; } .iphone-signal b:nth-child(4){ height:13px; }
+    .iphone-battery  { width:17px; height:9px; border:1.5px solid var(--text); border-radius:2.5px; position:relative; }
+    .iphone-battery::before { content:''; position:absolute; right:-3.5px; top:50%; transform:translateY(-50%); width:2px; height:5px; background:var(--text); border-radius:0 1px 1px 0; }
+    .iphone-battery::after  { content:''; position:absolute; left:1.5px; top:1.5px; bottom:1.5px; right:4px; background:var(--text); border-radius:1px; }
+    .iphone-screen--dark .iphone-time { color:rgba(255,255,255,.9); }
+    .iphone-screen--dark .iphone-signal b { background:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-battery { border-color:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-battery::before { background:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-battery::after  { background:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-home-bar { background:rgba(255,255,255,.18); }
+    .iphone-home-bar { width:38%; height:5px; background:rgba(0,0,0,.18); border-radius:3px; margin:8px auto 10px; flex-shrink:0; }
+    .phone--feat { width:220px; animation:featFloat 5.5s ease-in-out infinite; }
+    @keyframes featFloat { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-16px); } }
+
+    /* Screen content */
+    .screen-header { padding:6px 10px; background:#fff; border-bottom:1px solid #F0EEF8; display:flex; align-items:center; gap:6px; flex-shrink:0; }
+    .screen-emoji  { font-size:14px; }
+    .screen-title  { font-size:10px; font-weight:700; color:var(--text); }
+    .screen-sub    { font-size:8.5px; color:var(--sub); }
+    .live-indicator { display:flex; align-items:center; gap:3px; margin-left:auto; flex-shrink:0; }
+    .live-dot { width:5px; height:5px; border-radius:50%; background:#22C55E; animation:lpulse 1.2s ease-in-out infinite; }
+    .live-text { font-size:7.5px; font-weight:800; color:#22C55E; letter-spacing:.6px; }
+    @keyframes lpulse { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.4; transform:scale(.7); } }
+    .screen-tabs { display:flex; justify-content:space-evenly; flex-shrink:0; background:#fff; border-bottom:1px solid #F0EEF8; padding:0 2px; }
+    .screen-tab  { text-align:center; font-size:9px; font-weight:600; color:var(--sub); padding:6px 6px 7px; position:relative; }
+    .screen-tab.active { color:var(--primary); }
+    .screen-tab.active::after { content:''; position:absolute; bottom:0; left:20%; right:20%; height:2px; background:var(--primary); border-radius:1px 1px 0 0; }
+
+    /* Photo grid */
+    .photo-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; padding:1px; flex:1; align-content:start; }
+    .photo-cell { aspect-ratio:1; border-radius:2px; }
+    .c1{background:#D1FAE5;}.c2{background:#FDE8D0;}.c3{background:#DDD6FE;}.c4{background:#FEE2E2;}.c5{background:#DBEAFE;}.c6{background:#FEF3C7;}.c7{background:#FCE7F3;}.c8{background:#E0E7FF;}.c9{background:#ECFDF5;}
+    @keyframes photoArrive { 0%{ transform:scale(.1) rotate(-6deg); opacity:0; } 62%{ transform:scale(1.08) rotate(1deg); opacity:1; } 100%{ transform:scale(1) rotate(0); opacity:1; } }
+    .photo-cell--arriving { animation:photoArrive .4s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .notif-host { height:0; position:relative; overflow:visible; z-index:10; flex-shrink:0; }
+    .phone-toast { position:absolute; left:6px; right:6px; top:4px; background:rgba(28,27,31,.82); backdrop-filter:blur(12px); border-radius:40px; padding:4px 8px 4px 4px; display:flex; align-items:center; gap:5px; pointer-events:none; box-shadow:0 4px 16px rgba(0,0,0,.3); animation:phoneToast .45s cubic-bezier(.34,1.56,.64,1) forwards; }
+    @keyframes phoneToast { 0%{ opacity:0; transform:translateY(-12px) scale(.92); } 100%{ opacity:1; transform:none; } }
+    .phone-toast__dot   { width:22px; height:22px; border-radius:50%; background:var(--primary); color:#fff; font-size:8px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .phone-toast__label { font-size:9px; font-weight:600; color:#fff; white-space:nowrap; flex:1; overflow:hidden; text-overflow:ellipsis; }
+    .phone-toast__thumb { width:22px; height:22px; border-radius:5px; flex-shrink:0; border:1px solid rgba(255,255,255,.15); }
+
+    /* QR screen */
+    .qr-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 8px; gap:7px; }
+    .qr-event-name { font-size:9px; font-weight:800; color:var(--text); }
+    .qr-box { width:90px; height:90px; border-radius:10px; border:2px solid var(--primary); position:relative; overflow:hidden; display:grid; grid-template-columns:repeat(6,1fr); gap:1.5px; padding:6px; background:#fff; }
+    .qr-cell { border-radius:1px; }
+    .qr-on { background:var(--dark); }
+    .qr-scan-line { position:absolute; left:4px; right:4px; height:2px; background:linear-gradient(90deg,transparent,var(--primary),transparent); animation:qrScan 2.4s ease-in-out infinite; border-radius:1px; }
+    @keyframes qrScan { 0%{ top:4px; opacity:0; } 8%{ opacity:1; } 92%{ opacity:1; } 100%{ top:calc(100% - 6px); opacity:0; } }
+    .qr-av { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:800; border:1.5px solid #fff; }
+    .qr-sub { font-size:7.5px; color:var(--sub); }
+
+    /* Face screen */
+    .face-screen { flex:1; display:flex; flex-direction:column; padding:6px; gap:4px; }
+    .face-you-banner { background:var(--primary-light); border-radius:6px; padding:5px 8px; display:flex; align-items:center; gap:5px; margin-bottom:3px; }
+    .face-you-av  { width:22px; height:22px; border-radius:50%; background:var(--primary); color:#fff; font-size:8px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+    .face-you-txt { font-size:8px; font-weight:700; color:var(--primary); }
+    .face-grid    { display:grid; grid-template-columns:1fr 1fr; gap:3px; flex:1; }
+    .face-cell    { border-radius:6px; position:relative; overflow:hidden; }
+    .face-highlight { position:absolute; inset:0; border-radius:6px; border:2px solid var(--primary); background:rgba(91,79,217,.08); display:flex; align-items:flex-end; padding:3px; }
+    .face-tag { background:var(--primary); color:#fff; font-size:6px; font-weight:800; padding:1px 4px; border-radius:3px; }
+    @keyframes faceScan { 0%{ top:0; opacity:0; } 8%{ opacity:.6; } 92%{ opacity:.6; } 100%{ top:100%; opacity:0; } }
+    .face-scan-overlay { position:absolute; inset:0; border-radius:6px; overflow:hidden; }
+    .face-scan-line { position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,rgba(91,79,217,.7),transparent); animation:faceScan 3s ease-in-out infinite; }
+
+    /* Camera screen */
+    .cam-screen { flex:1; background:#080808; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+    .cam-grid { position:absolute; inset:0 0 52px 0; display:grid; grid-template-columns:1fr 1fr 1fr; grid-template-rows:1fr 1fr 1fr; }
+    .cam-grid span { border:.5px solid rgba(255,255,255,.07); }
+    .cam-focus { position:absolute; inset:22% 28% 28% 28%; border:1.5px solid rgba(91,79,217,.8); border-radius:4px; }
+    .cam-focus::before { content:''; position:absolute; top:-3px; left:-3px; width:8px; height:8px; border-top:2px solid var(--primary); border-left:2px solid var(--primary); }
+    .cam-focus::after  { content:''; position:absolute; bottom:-3px; right:-3px; width:8px; height:8px; border-bottom:2px solid var(--primary); border-right:2px solid var(--primary); }
+    .cam-badge { position:absolute; top:8px; right:8px; background:rgba(91,79,217,.85); border-radius:10px; padding:2px 8px; font-size:7px; font-weight:700; color:#fff; }
+    .cam-bar { position:absolute; bottom:0; left:0; right:0; height:52px; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; }
+    .cam-shutter { width:38px; height:38px; border-radius:50%; background:#fff; border:3px solid rgba(255,255,255,.3); }
+
+    /* Upload/quality screen */
+    .up-bar  { height:4px; background:rgba(91,79,217,.12); border-radius:2px; overflow:hidden; }
+    .up-fill { height:100%; background:var(--primary); border-radius:2px; animation:upFill 3s ease-in-out infinite alternate; }
+    @keyframes upFill { from{ width:20%; } to{ width:90%; } }
+    .up-photos { display:grid; grid-template-columns:repeat(3,1fr); gap:2px; }
+    .up-photo  { aspect-ratio:1; border-radius:4px; position:relative; overflow:hidden; }
+    .up-badge  { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+    .up-check  { width:14px; height:14px; background:var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; }
+    .up-check [data-lucide] { width:8px; height:8px; stroke:#fff; stroke-width:3; fill:none; }
+
+    /* ─── Feature overview grid ─── */
+    .feat-overview { padding:80px 0; }
+    .feat-overview__header { margin-bottom:48px; }
+    .feat-overview__label { font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:var(--primary); display:block; margin-bottom:10px; }
+    .feat-overview__title { font-size:clamp(24px,4.5vw,36px); font-weight:800; letter-spacing:-.5px; line-height:1.15; }
+    .feat-grid { display:grid; gap:1px; background:rgba(91,79,217,.1); border:1px solid rgba(91,79,217,.1); border-radius:20px; overflow:hidden; }
+    .feat-card { background:#fff; padding:28px 32px; display:flex; gap:16px; transition:background .2s; }
+    .feat-card:hover { background:#F5F4FF; }
+    .feat-card__icon { width:40px; height:40px; border-radius:10px; background:var(--primary-light); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .feat-card__icon [data-lucide] { width:18px; height:18px; stroke:var(--primary); stroke-width:2; fill:none; }
+    .feat-card__title { font-size:15px; font-weight:700; margin-bottom:4px; }
+    .feat-card__body  { font-size:13px; color:var(--sub); line-height:1.6; }
+
+    /* ─── CTA strip ─── */
+    .cta-strip { padding:88px 0; text-align:center; background:var(--primary); position:relative; overflow:hidden; }
+    .cta-strip::before { display:none; }
+    .cta-strip .container { position:relative; z-index:1; }
+    .cta-strip__label { font-size:11px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:rgba(255,255,255,.7); display:block; margin-bottom:14px; }
+    .cta-title { font-size:clamp(26px,5vw,42px); font-weight:800; letter-spacing:-.5px; line-height:1.12; margin-bottom:14px; color:#fff; }
+    .cta-sub   { font-size:16px; color:rgba(255,255,255,.65); margin-bottom:32px; }
+
+    /* ─── Footer ─── */
+    .footer { background:var(--primary); color:rgba(255,255,255,.65); padding:64px 0 36px; }
+    .footer__top { display:flex; flex-direction:column; gap:44px; padding-bottom:44px; border-bottom:1px solid rgba(255,255,255,.18); }
+    .footer__brand { display:flex; flex-direction:column; gap:12px; }
+    .footer__logo { display:flex; align-items:center; gap:10px; text-decoration:none; width:fit-content; }
+    .footer__logo-icon { width:30px; height:30px; border-radius:8px; object-fit:cover; }
+    .footer__logo-text { font-size:18px; font-weight:800; color:#fff; letter-spacing:-.5px; }
+    .footer__tagline { font-size:14px; color:rgba(255,255,255,.38); line-height:1.6; max-width:200px; }
+    .footer__cols { display:flex; flex-direction:column; gap:32px; }
+    .footer__col-title { font-size:12px; font-weight:700; color:#fff; letter-spacing:.8px; text-transform:uppercase; margin-bottom:16px; }
+    .footer__col-links { display:flex; flex-direction:column; gap:10px; }
+    .footer__col-link { font-size:14px; color:rgba(255,255,255,.42); text-decoration:none; transition:color .2s; }
+    .footer__col-link:hover { color:#fff; }
+    .footer__bottom { padding-top:28px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
+    .footer__copy   { font-size:13px; color:rgba(255,255,255,.22); }
+    .footer__legal  { display:flex; gap:20px; }
+    .footer__legal a { font-size:13px; color:rgba(255,255,255,.3); text-decoration:none; }
+    .footer__legal a:hover { color:rgba(255,255,255,.7); }
+
+    /* ─── Desktop ─── */
+    @media(min-width:641px) {
+      .nav__links { display:flex; }
+      .nav__burger { display:none; }
+      .nav__cta { display:inline-flex; }
+      .feature-row { flex-direction:row; gap:80px; padding:72px 64px; }
+      .feature-row--rev { flex-direction:row-reverse; }
+      .fr-text { flex:1; }
+      .fr-phone { flex:1; justify-content:center; }
+      .feat-grid { grid-template-columns:1fr 1fr; }
+      .footer__top { flex-direction:row; gap:64px; }
+      .footer__brand { flex:1.4; }
+      .footer__cols { flex:2; flex-direction:row; justify-content:space-between; gap:0; }
+      .footer__bottom { flex-direction:row; justify-content:space-between; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Nav ─── -->
+<nav class="nav" id="nav">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">
+      <img src="icon.png" alt="Rollout" class="nav__icon" />
+      <span class="nav__logo-text">Rollout</span>
+    </a>
+    <div class="nav__links">
+      <a href="index.html" class="nav__link">Home</a>
+      <a href="features.html" class="nav__link active">Features</a>
+      <a href="how-it-works.html" class="nav__link">How it works</a>
+      <a href="about.html" class="nav__link">About</a>
+    </div>
+    <a href="index.html#waitlist" class="btn-primary btn-primary--sm nav__cta">Get Early Access</a>
+    <button class="nav__burger" id="navBurger" aria-label="Open menu"><i data-lucide="menu"></i></button>
+  </div>
+  <div class="nav__mobile" id="navMobile">
+    <a href="index.html" class="nav__mobile-link">Home</a>
+    <a href="features.html" class="nav__mobile-link">Features</a>
+    <a href="how-it-works.html" class="nav__mobile-link">How it works</a>
+    <a href="about.html" class="nav__mobile-link">About</a>
+    <a href="index.html#waitlist" class="btn-primary" style="margin-top:8px">Get Early Access</a>
+  </div>
+</nav>
+
+
+<!-- ─── Page hero ─── -->
+<section class="page-hero">
+  <div class="container">
+    <span class="page-hero__label fade-up">Features</span>
+    <h1 class="page-hero__title fade-up">Built for the moment,<br/>not after it.</h1>
+    <p class="page-hero__sub fade-up">Every feature exists to solve one problem: photos that never get shared.</p>
+  </div>
+</section>
+
+
+<!-- ─── Feature rows ─── -->
+<div class="features-list">
+  <div class="container">
+
+    <!-- 1: Live sync -->
+    <div class="feature-row" id="live-sync">
+      <div class="fr-text fade-left">
+        <div class="fr-icon"><i data-lucide="zap"></i></div>
+        <h2 class="fr-title">Photos appear while the event is still happening.</h2>
+        <p class="fr-body">The moment someone takes a photo, it shows on everyone's screen. Not "I'll send them later" — that message never gets a reply. Rollout pushes photos in real-time so you see them while you can still react.</p>
+        <div class="fr-tags">
+          <span class="fr-tag">Real-time push</span>
+          <span class="fr-tag">Up to 50 people</span>
+          <span class="fr-tag">Zero delay</span>
+        </div>
+      </div>
+      <div class="fr-phone fade-right">
+        <div class="iphone-wrap phone--feat">
+          <div class="iphone-frame">
+            <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+            <div class="iphone-screen">
+              <div class="dynamic-island"></div>
+              <div class="iphone-status"><span class="iphone-time">9:41</span><div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div></div>
+              <div class="screen-header">
+                <span class="screen-emoji">✈️</span>
+                <div style="flex:1;min-width:0"><div class="screen-title">Goa Trip 2025</div><div class="screen-sub" id="liveSubtitle">5 people · 0 photos</div></div>
+                <div class="live-indicator"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+              </div>
+              <div class="screen-tabs">
+                <div class="screen-tab active">All</div><div class="screen-tab">People</div><div class="screen-tab">Yours</div>
+              </div>
+              <div class="notif-host" id="liveNotif"></div>
+              <div class="photo-grid" id="liveGrid"></div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2: Face detection -->
+    <div class="feature-row feature-row--rev" id="face-detection">
+      <div class="fr-text fade-right">
+        <div class="fr-icon"><i data-lucide="scan-face"></i></div>
+        <h2 class="fr-title">Find every photo you're in, across every phone.</h2>
+        <p class="fr-body">On-device face detection scans every photo in the room and groups them by who's in the shot. Tap "Yours" and see every candid, every group shot, every moment someone captured of you — even shots you didn't know existed.</p>
+        <div class="fr-tags">
+          <span class="fr-tag">On-device, private</span>
+          <span class="fr-tag">Auto-grouped</span>
+          <span class="fr-tag">One-tap save all</span>
+        </div>
+      </div>
+      <div class="fr-phone fade-left">
+        <div class="iphone-wrap phone--feat">
+          <div class="iphone-frame">
+            <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+            <div class="iphone-screen">
+              <div class="dynamic-island"></div>
+              <div class="iphone-status"><span class="iphone-time">9:41</span><div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div></div>
+              <div class="screen-header">
+                <span class="screen-emoji">✈️</span>
+                <div style="flex:1;min-width:0"><div class="screen-title">Goa Trip 2025</div></div>
+              </div>
+              <div class="screen-tabs">
+                <div class="screen-tab">All</div><div class="screen-tab">People</div><div class="screen-tab active">Yours</div>
+              </div>
+              <div class="face-screen">
+                <div class="face-you-banner">
+                  <div class="face-you-av">Y</div>
+                  <span class="face-you-txt">18 photos of you</span>
+                </div>
+                <div class="face-grid">
+                  <div class="face-cell" style="background:#D1FAE5">
+                    <div class="face-scan-overlay"><div class="face-scan-line"></div></div>
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#DDD6FE">
+                    <div class="face-scan-overlay"><div class="face-scan-line" style="animation-delay:-.8s"></div></div>
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#FDE8D0">
+                    <div class="face-scan-overlay"><div class="face-scan-line" style="animation-delay:-1.6s"></div></div>
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#DBEAFE">
+                    <div class="face-scan-overlay"><div class="face-scan-line" style="animation-delay:-2.4s"></div></div>
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#FEF3C7"></div>
+                  <div class="face-cell" style="background:#FCE7F3"></div>
+                </div>
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3: Zero friction -->
+    <div class="feature-row" id="zero-friction">
+      <div class="fr-text fade-left">
+        <div class="fr-icon"><i data-lucide="user-check"></i></div>
+        <h2 class="fr-title">No account. No app. Under 5 seconds to join.</h2>
+        <p class="fr-body">The biggest killer of group sharing is setup friction. If joining requires a download, a signup, or a password — people won't do it. Rollout requires exactly one action: point your camera at the QR code. You're in.</p>
+        <div class="fr-tags">
+          <span class="fr-tag">QR join</span>
+          <span class="fr-tag">No app install</span>
+          <span class="fr-tag">No account</span>
+        </div>
+      </div>
+      <div class="fr-phone fade-right">
+        <div class="iphone-wrap phone--feat">
+          <div class="iphone-frame">
+            <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+            <div class="iphone-screen">
+              <div class="dynamic-island"></div>
+              <div class="iphone-status"><span class="iphone-time">9:41</span><div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div></div>
+              <div class="qr-screen">
+                <div class="qr-event-name">✈️ Goa Trip 2025</div>
+                <div style="font-size:7.5px;color:var(--sub);margin-top:-3px">5 people already in</div>
+                <div class="qr-box">
+                  <div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div>
+                  <div class="qr-scan-line"></div>
+                </div>
+                <div class="qr-sub">Point your camera here</div>
+                <div style="display:flex;align-items:center;gap:4px">
+                  <div class="qr-av" style="background:#D1FAE5;color:#065F46">P</div>
+                  <div class="qr-av" style="background:#DDD6FE;color:#4C1D95;margin-left:-5px">R</div>
+                  <div class="qr-av" style="background:#FDE8D0;color:#92400E;margin-left:-5px">A</div>
+                  <span style="margin-left:6px;font-size:7px;color:var(--sub)">3 people joined</span>
+                </div>
+                <div style="background:var(--primary);color:#fff;border-radius:20px;padding:6px 18px;font-size:9px;font-weight:800;animation:lpulse 2s ease-in-out infinite">Join Room →</div>
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4: Full resolution -->
+    <div class="feature-row feature-row--rev" id="full-resolution">
+      <div class="fr-text fade-right">
+        <div class="fr-icon"><i data-lucide="image"></i></div>
+        <h2 class="fr-title">Original quality. Every time. No compression.</h2>
+        <p class="fr-body">WhatsApp turns your 12MP photos into blurry thumbnails you'd be embarrassed to post. Rollout transfers the original file — exactly what came out of the camera, ready to print, post, or frame.</p>
+        <div class="fr-tags">
+          <span class="fr-tag">Original files</span>
+          <span class="fr-tag">Print ready</span>
+          <span class="fr-tag">Bulk download</span>
+        </div>
+      </div>
+      <div class="fr-phone fade-left">
+        <div class="iphone-wrap phone--feat">
+          <div class="iphone-frame">
+            <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+            <div class="iphone-screen">
+              <div class="dynamic-island"></div>
+              <div class="iphone-status"><span class="iphone-time">9:41</span><div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;padding:8px;gap:8px">
+                <div style="font-size:10px;font-weight:800;color:var(--text)">Download photos</div>
+                <div style="background:var(--primary-light);border-radius:8px;padding:8px">
+                  <div style="font-size:8px;font-weight:600;color:var(--primary);margin-bottom:5px">12 photos ready</div>
+                  <div class="up-bar"><div class="up-fill" style="width:80%;animation:none"></div></div>
+                  <div style="font-size:7px;color:var(--sub);margin-top:3px">47.2 MB · original quality</div>
+                </div>
+                <div class="up-photos">
+                  <div class="up-photo" style="background:#D1FAE5"><div class="up-badge"><div class="up-check"><i data-lucide="check"></i></div></div></div>
+                  <div class="up-photo" style="background:#DDD6FE"><div class="up-badge"><div class="up-check"><i data-lucide="check"></i></div></div></div>
+                  <div class="up-photo" style="background:#FDE8D0"><div class="up-badge"><div class="up-check"><i data-lucide="check"></i></div></div></div>
+                  <div class="up-photo" style="background:#DBEAFE"><div class="up-badge"><div class="up-check"><i data-lucide="check"></i></div></div></div>
+                  <div class="up-photo" style="background:#FEF3C7"><div class="up-badge"><div class="up-check"><i data-lucide="check"></i></div></div></div>
+                  <div class="up-photo" style="background:#FCE7F3"><div class="up-badge"><div class="up-check"><i data-lucide="check"></i></div></div></div>
+                </div>
+                <div style="background:var(--primary);color:#fff;border-radius:20px;padding:7px 14px;font-size:9px;font-weight:800;text-align:center;margin-top:auto">Save all to Camera Roll</div>
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ─── Feature overview grid ─── -->
+<section class="feat-overview">
+  <div class="container">
+    <div class="feat-overview__header">
+      <span class="feat-overview__label">Everything included</span>
+      <h2 class="feat-overview__title fade-up">No paywalls. No tiers. Just Rollout.</h2>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card fade-up">
+        <div class="feat-card__icon"><i data-lucide="qr-code"></i></div>
+        <div><div class="feat-card__title">Instant QR rooms</div><div class="feat-card__body">Create a shared album in one tap. Share via QR or link. No setup ceremony.</div></div>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-card__icon"><i data-lucide="zap"></i></div>
+        <div><div class="feat-card__title">Real-time sync</div><div class="feat-card__body">Photos push to all members the moment they're uploaded. Everyone's phone, one stream.</div></div>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-card__icon"><i data-lucide="scan-face"></i></div>
+        <div><div class="feat-card__title">Face detection</div><div class="feat-card__body">On-device. Private. Finds every photo you appear in across all uploaded shots.</div></div>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-card__icon"><i data-lucide="image"></i></div>
+        <div><div class="feat-card__title">Original quality</div><div class="feat-card__body">Full resolution files, always. No server-side compression, no quality trade-offs.</div></div>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-card__icon"><i data-lucide="download"></i></div>
+        <div><div class="feat-card__title">Bulk download</div><div class="feat-card__body">Download the whole album — or just your photos — in one tap at any time.</div></div>
+      </div>
+      <div class="feat-card fade-up">
+        <div class="feat-card__icon"><i data-lucide="shield"></i></div>
+        <div><div class="feat-card__title">Private by default</div><div class="feat-card__body">Albums are private. Only people with the QR or link can join. Nothing is public.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─── CTA ─── -->
+<section class="cta-strip">
+  <div class="container">
+    <span class="cta-strip__label">Get started</span>
+    <h2 class="cta-title fade-up">Ready to stop missing<br/>photos of yourself?</h2>
+    <p class="cta-sub fade-up">Drop your number. One text when you're in.</p>
+    <a href="index.html#waitlist" class="btn-primary fade-up">
+      Join the Waitlist <i data-lucide="arrow-right"></i>
+    </a>
+  </div>
+</section>
+
+
+<!-- ─── Footer ─── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="index.html" class="footer__logo">
+          <img src="icon.png" alt="Rollout" class="footer__logo-icon" />
+          <span class="footer__logo-text">Rollout</span>
+        </a>
+        <p class="footer__tagline">Every photo from every phone, found and synced, live.</p>
+      </div>
+      <div class="footer__cols">
+        <div>
+          <div class="footer__col-title">Product</div>
+          <div class="footer__col-links">
+            <a href="features.html" class="footer__col-link">Features</a>
+            <a href="how-it-works.html" class="footer__col-link">How it works</a>
+            <a href="index.html#waitlist" class="footer__col-link">Join waitlist</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer__col-title">Company</div>
+          <div class="footer__col-links">
+            <a href="about.html" class="footer__col-link">About</a>
+            <a href="mailto:hello@rollouts.in" class="footer__col-link">Contact</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer__col-title">Legal</div>
+          <div class="footer__col-links">
+            <a href="privacy-policy.html" class="footer__col-link">Privacy Policy</a>
+            <a href="terms.html" class="footer__col-link">Terms &amp; Conditions</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span class="footer__copy">© 2026 Rollout. All rights reserved.</span>
+      <div class="footer__legal">
+        <a href="privacy-policy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => nav.classList.toggle('nav--scrolled', window.scrollY > 20), {passive:true});
+  document.getElementById('navBurger').addEventListener('click', () => {
+    const mobile = document.getElementById('navMobile');
+    const isOpen = mobile.classList.toggle('open');
+    const icon = document.querySelector('#navBurger [data-lucide]');
+    icon.setAttribute('data-lucide', isOpen ? 'x' : 'menu');
+    lucide.createIcons();
+  });
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
+  }, {threshold:0.1, rootMargin:'0px 0px -20px 0px'});
+  document.querySelectorAll('.fade-up,.fade-left,.fade-right').forEach(el => obs.observe(el));
+
+  /* Live sync demo */
+  const SENDERS = [
+    {name:'Priya', init:'P', color:'#D1FAE5'},
+    {name:'Rohan', init:'R', color:'#DDD6FE'},
+    {name:'Arjun', init:'A', color:'#FDE8D0'},
+    {name:'Meera', init:'M', color:'#DBEAFE'},
+  ];
+  let _si=0, _dc=0;
+  setInterval(()=>{
+    const s = SENDERS[_si % SENDERS.length];
+    const grid = document.getElementById('liveGrid');
+    const host = document.getElementById('liveNotif');
+    if (!grid || !host) return;
+    host.innerHTML = '';
+    const n = document.createElement('div'); n.className = 'phone-toast';
+    n.innerHTML = `<div class="phone-toast__dot">${s.init}</div><span class="phone-toast__label">${s.name} added a photo</span><div class="phone-toast__thumb" style="background:${s.color}"></div>`;
+    host.appendChild(n);
+    setTimeout(() => n.parentNode && n.parentNode.removeChild(n), 2800);
+    const cell = document.createElement('div');
+    cell.className = 'photo-cell photo-cell--arriving';
+    cell.style.background = s.color;
+    grid.firstChild ? grid.insertBefore(cell, grid.firstChild) : grid.appendChild(cell);
+    while (grid.children.length > 18) grid.removeChild(grid.lastChild);
+    _dc++; _si++;
+    const sub = document.getElementById('liveSubtitle');
+    if (sub) sub.textContent = `5 people · ${_dc} photos`;
+  }, 2800);
+</script>
+</body>
+</html>

@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rollout : Group Event Photo Sharing</title>
-  <meta name="description" content="Scan one QR at your next event. Every photo from every phone syncs live, parties, road trips, weddings, treks." />
-  <meta property="og:title" content="Rollout : Group Event Photo Sharing" />
-  <meta property="og:description" content="Scan one QR. Every photo from every phone syncs live, parties, trips, weddings, any group event." />
+  <title>Rollout: Collect & Find Photos</title>
+  <meta name="description" content="Scan one QR at your next event. Every photo from every phone syncs live, and face detection finds every shot of you." />
+  <meta property="og:title" content="Rollout: Collect & Find Photos" />
+  <meta property="og:description" content="Scan one QR. Every photo from every phone syncs live." />
   <meta property="og:type" content="website" />
 
   <style>
@@ -25,7 +25,8 @@
       --success:       #059669;
       --error:         #DC2626;
       --dark:          #0E0A24;
-      --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-full: 999px;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px; --r-full: 999px;
+      --nav-h: 64px;
     }
 
     html { scroll-behavior: smooth; }
@@ -35,519 +36,662 @@
       line-height: 1.6; overflow-x: hidden;
     }
 
-    .container { max-width: 960px; margin: 0 auto; padding: 0 20px; }
-    .section    { padding: 64px 0; }
-    .section--white  { background: var(--surface); }
+    .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    .section    { padding: 88px 0; }
+    .section--white { background: var(--surface); }
 
-/* ─── Hero ─── */
+    /* ─── Scroll animations ─── */
+    .fade-up    { opacity:0; transform:translateY(24px); transition:opacity .55s ease,transform .55s ease; }
+    .fade-left  { opacity:0; transform:translateX(-24px); transition:opacity .6s ease,transform .6s ease; }
+    .fade-right { opacity:0; transform:translateX(24px); transition:opacity .6s ease,transform .6s ease; }
+    .fade-up.in, .fade-left.in, .fade-right.in { opacity:1; transform:none; }
+
+    /* ─── Nav ─── */
+    .nav {
+      position: fixed; top:0; left:0; right:0; z-index:1000;
+      height: var(--nav-h);
+      transition: background .3s, box-shadow .3s, backdrop-filter .3s;
+    }
+    .nav--scrolled {
+      background: rgba(245,245,255,.88);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow: 0 1px 0 rgba(91,79,217,.1), 0 4px 20px rgba(0,0,0,.06);
+    }
+    .nav__inner { display:flex; align-items:center; height:var(--nav-h); gap:8px; }
+    .nav__logo  { display:flex; align-items:center; gap:10px; text-decoration:none; flex-shrink:0; }
+    .nav__icon  { width:30px; height:30px; border-radius:8px; object-fit:cover; }
+    .nav__logo-text { font-size:18px; font-weight:800; color:var(--text); letter-spacing:-.5px; }
+    .nav__links { display:none; align-items:center; gap:2px; margin-left:auto; margin-right:12px; }
+    .nav__link  {
+      padding:8px 14px; border-radius:var(--r-full); font-size:14px; font-weight:600;
+      color:var(--sub); text-decoration:none; transition:color .2s, background .2s;
+    }
+    .nav__link:hover { color:var(--text); background:rgba(91,79,217,.07); }
+    .nav__link.active { color:var(--primary); }
+    .nav__cta   { flex-shrink:0; display:none; }
+    .nav__burger {
+      display:flex; align-items:center; justify-content:center; margin-left:auto;
+      width:40px; height:40px; border:none; background:transparent; cursor:pointer;
+      border-radius:var(--r-md); transition:background .2s;
+    }
+    .nav__burger:hover { background:rgba(91,79,217,.07); }
+    .nav__burger [data-lucide] { width:22px; height:22px; stroke:var(--text); stroke-width:2; fill:none; transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s; }
+    .nav__mobile {
+      display:flex; flex-direction:column; gap:4px; padding:0 24px;
+      background:rgba(245,245,255,.96); backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border);
+      max-height:0; overflow:hidden; opacity:0;
+      transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s ease,padding .35s cubic-bezier(.4,0,.2,1);
+      pointer-events:none;
+    }
+    .nav__mobile.open { max-height:360px; padding:12px 24px 20px; opacity:1; pointer-events:auto; }
+    .nav__mobile-link { padding:12px 14px; border-radius:var(--r-md); font-size:16px; font-weight:600; color:var(--text); text-decoration:none; }
+
+    /* ─── Buttons ─── */
+    .btn-primary {
+      background:var(--primary); color:#fff; border:none; border-radius:var(--r-full);
+      padding:13px 26px; font-size:15px; font-weight:700; cursor:pointer;
+      text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+      transition:background .2s, transform .15s, box-shadow .2s;
+      box-shadow:0 4px 20px rgba(91,79,217,.42);
+    }
+    .btn-primary:hover { background:var(--primary-dark); transform:translateY(-2px); box-shadow:0 8px 32px rgba(91,79,217,.5); }
+    .btn-primary--sm  { padding:10px 20px; font-size:14px; }
+    .btn-secondary {
+      display:inline-flex; align-items:center; gap:8px;
+      background:transparent; color:var(--primary);
+      border:2px solid var(--primary); border-radius:var(--r-full);
+      padding:11px 24px; font-size:15px; font-weight:700;
+      text-decoration:none; transition:background .2s, color .2s;
+    }
+    .btn-secondary:hover { background:var(--primary); color:#fff; }
+    [data-lucide] { display:block; flex-shrink:0; }
+    .btn-primary [data-lucide],
+    .btn-secondary [data-lucide] { width:16px; height:16px; stroke:currentColor; stroke-width:2.5; fill:none; }
+
+    /* ─── Hero ─── */
     .hero {
-      padding: 56px 0 0;
-      text-align: center;
-      background: var(--bg);
-      color: var(--text); position: relative; overflow: hidden;
-    }
-    .hero::before {
-      content: ''; position: absolute;
-      width: 500px; height: 500px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(91,79,217,.08) 0%, transparent 65%);
-      top: -160px; left: 50%; transform: translateX(-50%);
-      pointer-events: none;
+      padding: calc(var(--nav-h) + 56px) 0 80px;
+      text-align:center; background:var(--bg);
+      position:relative; overflow:hidden; min-height:100svh;
     }
 
-    .hero__eyebrow {
-      display: inline-flex; align-items: center; gap: 7px;
-      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
-      color: rgba(255,255,255,.85); font-size: 12px; font-weight: 600;
-      letter-spacing: .5px; text-transform: uppercase;
-      padding: 5px 14px; border-radius: var(--r-full); margin-bottom: 24px;
+    /* Animated blobs */
+    .hero__blobs { position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+    .blob {
+      position:absolute; border-radius:50%; filter:blur(72px); opacity:.5;
+      animation:blobDrift var(--dur,12s) ease-in-out infinite;
+      animation-delay:var(--delay,0s);
     }
-    .pill-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
-      animation: pulse 1.6s ease-in-out infinite; flex-shrink: 0;
+    .blob--1 {
+      width:640px; height:640px; --dur:14s;
+      background:radial-gradient(circle,rgba(91,79,217,.18) 0%,transparent 70%);
+      top:-220px; left:50%; transform:translateX(-50%);
     }
-    @keyframes pulse { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.4; transform:scale(.75); } }
+    .blob--2 {
+      width:420px; height:420px; --dur:17s; --delay:-4s;
+      background:radial-gradient(circle,rgba(167,139,250,.22) 0%,transparent 70%);
+      bottom:60px; right:-60px;
+    }
+    .blob--3 {
+      width:320px; height:320px; --dur:11s; --delay:-2s;
+      background:radial-gradient(circle,rgba(91,79,217,.12) 0%,transparent 70%);
+      top:180px; left:-80px;
+    }
+    @keyframes blobDrift {
+      0%,100% { transform:translateX(0) translateY(0) scale(1); }
+      33% { transform:translateX(30px) translateY(-30px) scale(1.06); }
+      66% { transform:translateX(-20px) translateY(20px) scale(.96); }
+    }
+    .blob--1 { animation:blobDrift1 14s ease-in-out infinite; }
+    @keyframes blobDrift1 {
+      0%,100% { transform:translateX(-50%) translateY(0); }
+      50% { transform:translateX(-50%) translateY(-28px) scale(1.07); }
+    }
+
+    /* Floating particles */
+    .hero__particles { position:absolute; inset:0; pointer-events:none; z-index:0; }
+    .particle {
+      position:absolute; width:4px; height:4px; border-radius:50%;
+      background:var(--primary); opacity:0;
+      animation:particleFloat var(--dur) ease-in-out infinite;
+      animation-delay:var(--delay);
+    }
+    @keyframes particleFloat {
+      0%,100% { opacity:0; transform:translateY(0); }
+      50% { opacity:.25; transform:translateY(-18px); }
+    }
+
+    .hero__content { position:relative; z-index:2; }
+    .hero__badge {
+      display:inline-flex; align-items:center; gap:8px;
+      background:rgba(91,79,217,.08); border:1px solid rgba(91,79,217,.2);
+      color:var(--primary); font-size:11px; font-weight:700;
+      letter-spacing:.6px; text-transform:uppercase;
+      padding:6px 14px; border-radius:var(--r-full); margin-bottom:28px;
+    }
+    .badge-dot { width:6px; height:6px; border-radius:50%; background:var(--primary); animation:pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.4; transform:scale(.7); } }
 
     .hero__title {
-      font-size: clamp(36px, 10vw, 68px); font-weight: 900; line-height: 1.05;
-      letter-spacing: -2px; color: var(--text);
-      max-width: 700px; margin: 0 auto 18px;
+      font-size:clamp(38px,9vw,72px); font-weight:900; line-height:1.04;
+      letter-spacing:-2.5px; max-width:760px; margin:0 auto 20px;
     }
-    .hero__title em { color: var(--accent); font-style: normal; }
+    .hero__title em { color:var(--accent); font-style:normal; }
+    .hero__word { color:var(--primary); display:inline-block; }
+    @keyframes wordIn { 0%{ opacity:0; transform:translateY(14px) scale(.94); } 100%{ opacity:1; transform:none; } }
+
     .hero__sub {
-      font-size: clamp(15px, 2.5vw, 18px); color: var(--sub);
-      max-width: 440px; margin: 0 auto 32px; line-height: 1.65;
+      font-size:clamp(15px,2.5vw,19px); color:var(--sub);
+      max-width:460px; margin:0 auto 36px; line-height:1.7;
     }
-    .hero__word { color: var(--primary); display: inline-block; }
-    @keyframes wordIn { 0%{ opacity:0; transform:translateY(12px); } 100%{ opacity:1; transform:translateY(0); } }
+    .hero__ctas { display:flex; flex-direction:column; align-items:center; gap:12px; }
 
-    .btn-primary {
-      background: var(--primary); color: #fff; border: none; border-radius: var(--r-full);
-      padding: 14px 30px; font-size: 16px; font-weight: 700; cursor: pointer;
-      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
-      transition: background .2s, transform .15s;
-      box-shadow: 0 4px 24px rgba(91,79,217,.5);
+    /* ─── Hero phone stage ─── */
+    .hero__stage {
+      margin-top:52px; position:relative;
+      display:flex; justify-content:center; align-items:flex-end;
+      min-height:380px; padding-top:40px; padding-bottom:48px;
     }
-    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
-    .hero__ctas {
-      display: inline-flex; flex-direction: column; align-items: stretch;
-      gap: 12px;
+    .stage-glow {
+      position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(ellipse 80% 55% at 50% 90%, rgba(91,79,217,.1) 0%,transparent 70%);
     }
-    .btn-secondary {
-      display: flex; align-items: center; justify-content: center;
-      background: transparent; color: var(--primary);
-      border: 2px solid var(--primary); border-radius: var(--r-full);
-      padding: 14px 30px; font-size: 16px; font-weight: 700;
-      text-decoration: none; transition: background .2s, color .2s;
-    }
-    .btn-secondary:hover { background: var(--primary); color: #fff; }
-    .btn-primary [data-lucide] { width: 16px; height: 16px; stroke: #fff; stroke-width: 2.5; fill: none; }
-
-    /* ─── Phone demo ─── */
-    .hero__demo-wrap { margin-top: 48px; position: relative; }
-
-    .demo-scene {
-      position: relative; display: flex; justify-content: center; align-items: center;
-      min-height: 360px;
-    }
-    .demo-scene::before {
-      content: ''; position: absolute;
-      width: 280px; height: 280px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(91,79,217,.08) 0%, transparent 65%);
-      pointer-events: none;
+    .stage-phones {
+      display:flex; align-items:flex-end; justify-content:center;
+      position:relative; gap:0;
     }
 
-    .sender-stream {
-      position: absolute; inset: 0; pointer-events: none; z-index: 5;
-      overflow: hidden; display: none;
-    }
-    .sender-toast {
-      position: absolute; display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,.85); backdrop-filter: blur(12px);
-      border: 1px solid rgba(91,79,217,.15); border-radius: 40px;
-      padding: 6px 12px 6px 6px;
-      font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;
-      box-shadow: 0 4px 20px rgba(91,79,217,.12);
-    }
-    .sender-toast.left  { right: calc(50% + 128px); animation: toastL 3.4s ease forwards; }
-    .sender-toast.right { left:  calc(50% + 128px); animation: toastR 3.4s ease forwards; }
-    @keyframes toastL {
-      0%{ opacity:0; transform:translateX(14px); } 14%{ opacity:1; transform:translateX(0); }
-      76%{ opacity:1; transform:translateX(0); } 100%{ opacity:0; transform:translateX(8px); }
-    }
-    @keyframes toastR {
-      0%{ opacity:0; transform:translateX(-14px); } 14%{ opacity:1; transform:translateX(0); }
-      76%{ opacity:1; transform:translateX(0); } 100%{ opacity:0; transform:translateX(-8px); }
-    }
-    .sender-toast__dot {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: var(--primary); color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800; flex-shrink: 0;
-    }
-    .sender-toast__thumb {
-      width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
-      border: 1px solid rgba(255,255,255,.2);
-    }
-
-    /* Modern iPhone frame */
+    /* iPhone base */
     .iphone-wrap {
-      position: relative; width: 200px; z-index: 2;
-      filter: drop-shadow(0 24px 48px rgba(91,79,217,.22)) drop-shadow(0 4px 16px rgba(0,0,0,.1));
+      position:relative;
+      filter:drop-shadow(0 28px 56px rgba(91,79,217,.24)) drop-shadow(0 6px 18px rgba(0,0,0,.1));
     }
     .iphone-frame {
-      background: linear-gradient(155deg, #C9C9CE 0%, #9A9AA0 30%, #BCBCC2 60%, #929298 100%);
-      border-radius: 42px;
-      padding: 7px;
-      position: relative;
-      box-shadow:
-        inset 0 0 0 0.5px rgba(255,255,255,.55),
-        inset 0 2px 3px rgba(255,255,255,.35),
-        0 0 0 0.5px rgba(0,0,0,.2);
+      background:linear-gradient(155deg,#C9C9CE 0%,#9A9AA0 30%,#BCBCC2 60%,#929298 100%);
+      border-radius:42px; padding:7px; position:relative;
+      box-shadow:inset 0 0 0 .5px rgba(255,255,255,.55),inset 0 2px 3px rgba(255,255,255,.35),0 0 0 .5px rgba(0,0,0,.2);
     }
-    /* Side buttons */
-    .iphone-mute    { position:absolute; left:-3px; top:72px;  width:3px; height:24px; background:#888890; border-radius:2px 0 0 2px; }
-    .iphone-vol-up  { position:absolute; left:-3px; top:108px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
-    .iphone-vol-down{ position:absolute; left:-3px; top:154px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
-    .iphone-power   { position:absolute; right:-3px;top:118px; width:3px; height:52px; background:#888890; border-radius:0 2px 2px 0; }
-    /* USB-C */
-    .iphone-usbc {
-      position:absolute; bottom:7px; left:50%; transform:translateX(-50%);
-      width:38px; height:5px; background:rgba(0,0,0,.22); border-radius:3px;
+    .iphone-mute     { position:absolute; left:-3px; top:72px;  width:3px; height:24px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-vol-up   { position:absolute; left:-3px; top:108px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-vol-down { position:absolute; left:-3px; top:154px; width:3px; height:36px; background:#888890; border-radius:2px 0 0 2px; }
+    .iphone-power    { position:absolute; right:-3px;top:118px; width:3px; height:52px; background:#888890; border-radius:0 2px 2px 0; }
+    .iphone-usbc     { position:absolute; bottom:7px; left:50%; transform:translateX(-50%); width:38px; height:5px; background:rgba(0,0,0,.22); border-radius:3px; }
+    .iphone-screen   {
+      background:var(--surface); border-radius:36px; overflow:hidden;
+      aspect-ratio:9/19.5; display:flex; flex-direction:column;
+      box-shadow:inset 0 0 0 .5px rgba(0,0,0,.08);
     }
-    .iphone-screen {
-      background: var(--surface); border-radius: 36px; overflow: hidden;
-      aspect-ratio: 9/19.5; display: flex; flex-direction: column;
-      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,.08);
-    }
-    /* Dynamic Island */
-    .dynamic-island {
-      width: 100px; height: 28px; background: #000; border-radius: 18px;
-      margin: 10px auto 0; flex-shrink: 0;
-    }
-    /* Status bar */
-    .iphone-status {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 5px 16px 5px; flex-shrink: 0;
-    }
-    .iphone-time { font-size: 9.5px; font-weight: 700; color: var(--text); letter-spacing:-.3px; }
-    .iphone-icons { display:flex; align-items:center; gap:4px; }
-    .iphone-signal { display:flex; align-items:flex-end; gap:1px; }
+    .dynamic-island  { width:100px; height:28px; background:#000; border-radius:18px; margin:10px auto 0; flex-shrink:0; }
+    .iphone-status   { display:flex; justify-content:space-between; align-items:center; padding:5px 16px; flex-shrink:0; }
+    .iphone-time     { font-size:9.5px; font-weight:700; color:var(--text); letter-spacing:-.3px; }
+    .iphone-icons    { display:flex; align-items:center; gap:4px; }
+    .iphone-signal   { display:flex; align-items:flex-end; gap:1px; }
     .iphone-signal b { display:block; width:2.5px; background:var(--text); border-radius:1px; }
     .iphone-signal b:nth-child(1){ height:4px; }
     .iphone-signal b:nth-child(2){ height:7px; }
     .iphone-signal b:nth-child(3){ height:10px; }
     .iphone-signal b:nth-child(4){ height:13px; }
-    .iphone-battery {
-      width:17px; height:9px; border:1.5px solid var(--text);
-      border-radius:2.5px; position:relative;
-    }
-    .iphone-battery::before {
-      content:''; position:absolute; right:-3.5px; top:50%; transform:translateY(-50%);
-      width:2px; height:5px; background:var(--text); border-radius:0 1px 1px 0;
-    }
-    .iphone-home-bar {
-      width: 38%; height: 5px; background: rgba(0,0,0,.22);
-      border-radius: 3px; margin: 8px auto 10px; flex-shrink: 0;
-    }
-    .iphone-battery::after {
-      content:''; position:absolute; left:1.5px; top:1.5px; bottom:1.5px; right:4px;
-      background:var(--text); border-radius:1px;
-    }
-    .demo-phone { z-index: 2; }
+    .iphone-battery  { width:17px; height:9px; border:1.5px solid var(--text); border-radius:2.5px; position:relative; }
+    .iphone-battery::before { content:''; position:absolute; right:-3.5px; top:50%; transform:translateY(-50%); width:2px; height:5px; background:var(--text); border-radius:0 1px 1px 0; }
+    .iphone-battery::after  { content:''; position:absolute; left:1.5px; top:1.5px; bottom:1.5px; right:4px; background:var(--text); border-radius:1px; }
+    .iphone-home-bar { width:38%; height:5px; background:rgba(0,0,0,.22); border-radius:3px; margin:8px auto 10px; flex-shrink:0; }
 
+    /* Phone sizes */
+    .phone--hero-main {
+      width:200px; z-index:3;
+      animation:floatMain 5s ease-in-out infinite;
+    }
+    .phone--hero-side-l {
+      width:154px; z-index:2; margin-right:-22px; margin-bottom:-12px;
+      animation:floatSideL 5.5s ease-in-out infinite;
+      animation-delay:-.8s;
+    }
+    .phone--hero-side-r {
+      width:154px; z-index:2; margin-left:-22px; margin-bottom:-12px;
+      animation:floatSideR 4.8s ease-in-out infinite;
+      animation-delay:-2.1s;
+    }
+    @keyframes floatMain  { 0%,100%{ transform:translateY(0) rotate(-1deg); } 50%{ transform:translateY(-22px) rotate(-1deg); } }
+    @keyframes floatSideL { 0%,100%{ transform:translateY(-4px) rotate(-13deg); } 50%{ transform:translateY(-20px) rotate(-13deg); } }
+    @keyframes floatSideR { 0%,100%{ transform:translateY(0) rotate(10deg); } 50%{ transform:translateY(-16px) rotate(10deg); } }
+
+    /* Stage floating toasts */
+    /* Hero floating pills */
+    .stage-pill {
+      position:absolute; display:none; align-items:center; gap:8px;
+      background:rgba(255,255,255,.88); backdrop-filter:blur(20px) saturate(160%);
+      border:1px solid rgba(255,255,255,.6); border-radius:var(--r-full);
+      padding:9px 16px; font-size:13px; font-weight:600; color:var(--text);
+      box-shadow:0 8px 32px rgba(91,79,217,.12),0 1px 3px rgba(0,0,0,.06);
+      pointer-events:none; z-index:10; white-space:nowrap;
+    }
+    .stage-pill__dot {
+      width:8px; height:8px; border-radius:50%; flex-shrink:0;
+      animation:pillPulse 2s ease-in-out infinite;
+    }
+    .stage-pill--left  { left:-8px; top:30%; animation:pillFloat 5s ease-in-out infinite; }
+    .stage-pill--right { right:-8px; top:42%; animation:pillFloat 5.8s ease-in-out infinite; animation-delay:-2.2s; }
+    @keyframes pillFloat { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-10px); } }
+    @keyframes pillPulse { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.45; transform:scale(.7); } }
+
+    /* Screen UI elements */
     .screen-header {
-      padding: 6px 10px; background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+      padding:6px 10px; background:var(--surface);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:6px; flex-shrink:0;
     }
-    .screen-emoji { font-size: 14px; }
-    .screen-title { font-size: 10px; font-weight: 700; color: var(--text); }
-    .screen-sub   { font-size: 8.5px; color: var(--sub); }
-    .live-indicator { display: flex; align-items: center; gap: 3px; margin-left: auto; flex-shrink: 0; }
-    .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #22C55E; animation: pulse 1.2s ease-in-out infinite; }
-    .live-text { font-size: 7.5px; font-weight: 800; color: #22C55E; letter-spacing: .6px; }
-
+    .screen-emoji { font-size:14px; }
+    .screen-title { font-size:10px; font-weight:700; color:var(--text); }
+    .screen-sub   { font-size:8.5px; color:var(--sub); }
+    .live-indicator { display:flex; align-items:center; gap:3px; margin-left:auto; flex-shrink:0; }
+    .live-dot { width:5px; height:5px; border-radius:50%; background:#22C55E; animation:pulse 1.2s ease-in-out infinite; }
+    .live-text { font-size:7.5px; font-weight:800; color:#22C55E; letter-spacing:.6px; }
     .screen-tabs {
-      display: flex; justify-content: space-evenly; flex-shrink: 0;
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 0 2px;
+      display:flex; justify-content:space-evenly; flex-shrink:0;
+      background:var(--surface); border-bottom:1px solid var(--border); padding:0 2px;
     }
-    .screen-tab {
-      text-align: center; font-size: 9px; font-weight: 600;
-      color: var(--sub); padding: 6px 6px 7px; position: relative;
-    }
-    .screen-tab.active { color: var(--primary); }
-    .screen-tab.active::after {
-      content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
-      height: 2px; background: var(--primary); border-radius: 1px 1px 0 0;
-    }
-
-    .notif-host { height: 0; position: relative; overflow: visible; z-index: 10; flex-shrink: 0; }
+    .screen-tab { text-align:center; font-size:9px; font-weight:600; color:var(--sub); padding:6px 6px 7px; position:relative; }
+    .screen-tab.active { color:var(--primary); }
+    .screen-tab.active::after { content:''; position:absolute; bottom:0; left:20%; right:20%; height:2px; background:var(--primary); border-radius:1px 1px 0 0; }
+    .notif-host { height:0; position:relative; overflow:visible; z-index:10; flex-shrink:0; }
     .phone-toast {
-      position: absolute; left: 6px; right: 6px; top: 4px;
-      background: rgba(28,27,31,.82); backdrop-filter: blur(12px);
-      border-radius: 40px; padding: 4px 8px 4px 4px;
-      display: flex; align-items: center; gap: 5px;
-      pointer-events: none;
-      box-shadow: 0 4px 16px rgba(0,0,0,.3);
-      animation: phoneToast 0.45s cubic-bezier(.34,1.56,.64,1) forwards;
+      position:absolute; left:6px; right:6px; top:4px;
+      background:rgba(28,27,31,.82); backdrop-filter:blur(12px);
+      border-radius:40px; padding:4px 8px 4px 4px;
+      display:flex; align-items:center; gap:5px;
+      pointer-events:none; box-shadow:0 4px 16px rgba(0,0,0,.3);
+      animation:phoneToast .45s cubic-bezier(.34,1.56,.64,1) forwards;
     }
-    @keyframes phoneToast {
-      0%   { opacity:0; transform:translateY(-12px) scale(.92); }
-      100% { opacity:1; transform:translateY(0) scale(1); }
-    }
-    .phone-toast__dot {
-      width: 22px; height: 22px; border-radius: 50%; background: var(--primary); color: #fff;
-      font-size: 8px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .phone-toast__label { font-size: 9px; font-weight: 600; color: #fff; white-space: nowrap; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-    .phone-toast__thumb { width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0; border: 1px solid rgba(255,255,255,.15); }
+    @keyframes phoneToast { 0%{ opacity:0; transform:translateY(-12px) scale(.92); } 100%{ opacity:1; transform:none; } }
+    .phone-toast__dot { width:22px; height:22px; border-radius:50%; background:var(--primary); color:#fff; font-size:8px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .phone-toast__label { font-size:9px; font-weight:600; color:#fff; white-space:nowrap; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+    .phone-toast__thumb { width:22px; height:22px; border-radius:5px; flex-shrink:0; border:1px solid rgba(255,255,255,.15); }
+    .photo-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; padding:1px; flex:1; align-content:start; }
+    .photo-cell { aspect-ratio:1; border-radius:2px; }
+    .c1{background:#D1FAE5;}.c2{background:#FDE8D0;}.c3{background:#DDD6FE;}
+    .c4{background:#FEE2E2;}.c5{background:#DBEAFE;}.c6{background:#FEF3C7;}
+    .c7{background:#FCE7F3;}.c8{background:#E0E7FF;}.c9{background:#ECFDF5;}
+    @keyframes photoArrive { 0%{ transform:scale(.1) rotate(-6deg); opacity:0; } 62%{ transform:scale(1.08) rotate(1deg); opacity:1; } 100%{ transform:scale(1) rotate(0); opacity:1; } }
+    .photo-cell--arriving { animation:photoArrive .4s cubic-bezier(.34,1.56,.64,1) forwards; }
 
-    .photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; padding: 1px; flex: 1; align-content: start; }
-    .photo-cell { aspect-ratio: 1; border-radius: 2px; }
-    .c1{background:#D1FAE5;} .c2{background:#FDE8D0;} .c3{background:#DDD6FE;}
-    .c4{background:#FEE2E2;} .c5{background:#DBEAFE;} .c6{background:#FEF3C7;}
-    .c7{background:#FCE7F3;} .c8{background:#E0E7FF;} .c9{background:#ECFDF5;}
-    @keyframes photoArrive {
-      0%{ transform:scale(0.1) rotate(-6deg); opacity:0; }
-      62%{ transform:scale(1.08) rotate(1deg); opacity:1; }
-      100%{ transform:scale(1) rotate(0); opacity:1; }
+    /* ─── Dark iPhone variant ─── */
+    .iphone-frame--dark {
+      background: linear-gradient(155deg,#2C2C32 0%,#1A1A20 60%,#2A2A30 100%);
     }
-    .photo-cell--arriving { animation: photoArrive .4s cubic-bezier(.34,1.56,.64,1) forwards; }
+    .iphone-frame--dark .iphone-mute,
+    .iphone-frame--dark .iphone-vol-up,
+    .iphone-frame--dark .iphone-vol-down,
+    .iphone-frame--dark .iphone-power { background:#444; }
+    .iphone-screen--dark { background:var(--dark); }
+    .iphone-screen--dark .iphone-time { color:rgba(255,255,255,.9); }
+    .iphone-screen--dark .iphone-signal b { background:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-battery { border-color:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-battery::before { background:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-battery::after  { background:rgba(255,255,255,.85); }
+    .iphone-screen--dark .iphone-home-bar { background:rgba(255,255,255,.18); }
+    .create-screen--dark { background:var(--dark); }
+    .create-screen--dark .cs-title { color:#fff; }
+    .create-screen--dark .cs-label { color:rgba(255,255,255,.5); }
+    .create-screen--dark .cs-input { border-color:var(--primary); background:rgba(91,79,217,.15); color:#fff; }
+    .create-screen--dark .cs-emoji:not(.sel) { background:rgba(255,255,255,.08); }
 
-    .demo-hint {
-      padding: 14px 0 20px; font-size: 13px; color: var(--sub);
-      display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center;
+    /* QR screen (left side phone) */
+    .qr-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 8px; gap:7px; }
+    .qr-event-name { font-size:9px; font-weight:800; color:var(--text); text-align:center; }
+    .qr-box {
+      width:76px; height:76px; border-radius:10px;
+      border:2px solid var(--primary); position:relative; overflow:hidden;
+      display:grid; grid-template-columns:repeat(6,1fr); gap:1.5px; padding:6px;
+      background:var(--surface);
     }
-    .demo-hint [data-lucide] { width: 13px; height: 13px; stroke: var(--primary); stroke-width: 2.5; fill: none; flex-shrink: 0; }
+    .qr-cell { border-radius:1px; }
+    .qr-on { background:var(--dark); }
+    .qr-scan-line {
+      position:absolute; left:4px; right:4px; height:2px;
+      background:linear-gradient(90deg,transparent,var(--primary),transparent);
+      animation:qrScan 2.4s ease-in-out infinite; border-radius:1px;
+    }
+    @keyframes qrScan { 0%{ top:4px; opacity:0; } 8%{ opacity:1; } 92%{ opacity:1; } 100%{ top:calc(100% - 6px); opacity:0; } }
+    .qr-sub { font-size:7.5px; color:var(--sub); text-align:center; }
+    .qr-members { display:flex; gap:-4px; align-items:center; margin-top:2px; }
+    .qr-av { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:800; border:1.5px solid #fff; margin-left:-5px; }
+    .qr-av:first-child { margin-left:0; }
+    .qr-count { font-size:7px; color:var(--sub); margin-left:5px; }
 
-    /* ─── Shared section typography ─── */
-    .overline {
-      font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
-      color: var(--primary); margin-bottom: 8px; display: block;
+    /* Create room screen (right side phone) */
+    .create-screen { flex:1; display:flex; flex-direction:column; padding:10px 10px; gap:8px; }
+    .cs-title { font-size:11px; font-weight:800; color:var(--text); }
+    .cs-label { font-size:8px; font-weight:600; color:var(--sub); margin-bottom:2px; }
+    .cs-input {
+      border:1.5px solid var(--border); border-radius:6px; padding:5px 8px;
+      font-size:9px; color:var(--text); font-weight:500;
+      display:flex; align-items:center; gap:4px;
     }
-    .section-title {
-      font-size: clamp(24px, 5.5vw, 40px); font-weight: 800;
-      letter-spacing: -.8px; line-height: 1.15; margin-bottom: 10px;
-    }
-    .section-sub { font-size: 15px; color: var(--sub); max-width: 520px; }
+    .cs-input.focused { border-color:var(--primary); }
+    .cs-cursor { width:1px; height:10px; background:var(--primary); animation:blink .9s step-end infinite; margin-left:1px; }
+    @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0; } }
+    .cs-emojis { display:flex; gap:4px; flex-wrap:wrap; }
+    .cs-emoji { width:24px; height:24px; border-radius:6px; background:var(--primary-light); display:flex; align-items:center; justify-content:center; font-size:13px; cursor:pointer; }
+    .cs-emoji.sel { background:var(--primary); }
+    .cs-btn { background:var(--primary); color:#fff; border-radius:6px; padding:7px; font-size:9px; font-weight:800; text-align:center; margin-top:4px; }
 
-    /* ─── Problem,editorial numbered list ─── */
-    .prob-list { margin-top: 36px; }
-    .prob-item {
-      display: grid; grid-template-columns: 52px 1fr; gap: 0 8px;
-      padding: 20px 0; border-top: 1px solid var(--border); align-items: start;
-    }
-    .prob-item:last-child { border-bottom: 1px solid var(--border); }
-    .prob-num {
-      font-size: 56px; font-weight: 900; color: var(--primary);
-      opacity: .1; line-height: .85; letter-spacing: -4px;
-    }
-    .prob-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; letter-spacing: -.3px; padding-top: 4px; }
-    .prob-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
+    /* Face detection screen */
+    .face-screen { flex:1; display:flex; flex-direction:column; padding:4px; gap:2px; }
+    .face-you-banner { background:var(--primary-light); border-radius:6px; padding:4px 6px; display:flex; align-items:center; gap:4px; margin-bottom:2px; }
+    .face-you-av { width:20px; height:20px; border-radius:50%; background:var(--primary); color:#fff; font-size:7px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+    .face-you-txt { font-size:7.5px; font-weight:700; color:var(--primary); }
+    .face-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px; flex:1; }
+    .face-cell { border-radius:5px; position:relative; overflow:hidden; }
+    .face-highlight { position:absolute; inset:0; border-radius:5px; border:1.5px solid var(--primary); background:rgba(91,79,217,.06); display:flex; align-items:flex-end; padding:2px; }
+    .face-tag { background:var(--primary); color:#fff; font-size:6px; font-weight:800; padding:1px 4px; border-radius:3px; }
 
-    /* ─── Steps,ghost number accent ─── */
-    .flow-list { margin-top: 36px; }
-    .flow-item {
-      display: grid; grid-template-columns: 52px 1fr; gap: 0 8px;
-      padding: 20px 0; border-top: 1px solid var(--border); align-items: start;
-    }
-    .flow-item:last-child { border-bottom: 1px solid var(--border); }
-    .flow-num {
-      font-size: 56px; font-weight: 900; color: var(--primary);
-      opacity: .1; line-height: .85; letter-spacing: -4px;
-    }
-    .flow-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; letter-spacing: -.3px; padding-top: 4px; }
-    .flow-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
+    /* ─── Typography ─── */
+    .overline { font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--primary); margin-bottom:10px; display:block; }
+    .section-title { font-size:clamp(26px,5.5vw,44px); font-weight:800; letter-spacing:-.8px; line-height:1.12; margin-bottom:12px; }
+    .section-sub { font-size:16px; color:var(--sub); max-width:520px; line-height:1.65; }
 
-    /* ─── Features,plain icon + text, no boxes ─── */
-    .feat-list { margin-top: 36px; }
-    .feat-item {
-      display: flex; gap: 18px; align-items: flex-start;
-      padding: 22px 0; border-top: 1px solid var(--border);
+    /* ─── Problem ─── */
+    .prob-list { margin-top:40px; }
+    .prob-item { display:grid; grid-template-columns:52px 1fr; gap:0 8px; padding:22px 0; border-top:1px solid var(--border); align-items:start; }
+    .prob-item:last-child { border-bottom:1px solid var(--border); }
+    .prob-num { font-size:56px; font-weight:900; color:var(--primary); opacity:.1; line-height:.85; letter-spacing:-4px; }
+    .prob-title { font-size:17px; font-weight:800; margin-bottom:6px; letter-spacing:-.3px; padding-top:4px; }
+    .prob-body  { font-size:14px; color:var(--sub); line-height:1.65; }
+
+    /* ─── Showcase (dark) ─── */
+    .showcase { background:var(--primary); padding:88px 0; overflow:hidden; position:relative; }
+    .showcase::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(ellipse 70% 50% at 50% 50%, rgba(255,255,255,.06) 0%, transparent 70%);
+      pointer-events:none;
     }
-    .feat-item:last-child { border-bottom: 1px solid var(--border); }
-    .feat-icon { flex-shrink: 0; padding-top: 2px; }
-    .feat-icon [data-lucide] { width: 20px; height: 20px; stroke: var(--primary); stroke-width: 2; fill: none; }
-    .feat-title { font-size: 16px; font-weight: 800; margin-bottom: 5px; letter-spacing: -.3px; }
-    .feat-body  { font-size: 14px; color: var(--sub); line-height: 1.65; }
+    .showcase .overline { color:var(--accent); }
+    .showcase .section-title { color:#fff; }
+    .showcase .section-sub { color:rgba(255,255,255,.48); }
+    .showcase-wrap { position:relative; z-index:1; }
+    .showcase-phones {
+      margin-top:56px; display:flex; justify-content:center;
+      align-items:flex-end; gap:12px; position:relative;
+    }
+    .sc-phone-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .sc-label { font-size:12px; font-weight:700; color:rgba(255,255,255,.38); letter-spacing:.3px; }
+    .sc-phone { opacity:0; transform:translateY(48px); transition:opacity .65s ease, transform .65s ease; }
+    .sc-phone.in { opacity:1; transform:none; }
+    .sc-phone:nth-child(1) { transition-delay:0s; }
+    .phone--sc-main { width:170px; }
+    .phone--sc-side { width:138px; }
+    .showcase-phones > .sc-phone-wrap:first-child,
+    .showcase-phones > .sc-phone-wrap:last-child { margin-bottom:28px; }
+    /* Scale side phone chrome proportionally */
+    .phone--sc-side .iphone-frame { border-radius:34px; padding:6px; }
+    .phone--sc-side .iphone-screen { border-radius:29px; }
+    .phone--sc-side .dynamic-island { width:74px; height:22px; border-radius:14px; margin-top:8px; }
+    .phone--sc-side .iphone-status { padding:4px 12px; }
+    .phone--sc-side .iphone-home-bar { margin:6px auto 8px; }
+
+    /* ─── Features ─── */
+    .feat-list { margin-top:40px; }
+    .feat-item { display:flex; gap:20px; align-items:flex-start; padding:24px 0; border-top:1px solid var(--border); }
+    .feat-item:last-child { border-bottom:1px solid var(--border); }
+    .feat-icon [data-lucide] { width:22px; height:22px; stroke:var(--primary); stroke-width:2; fill:none; }
+    .feat-title { font-size:17px; font-weight:800; margin-bottom:6px; letter-spacing:-.3px; }
+    .feat-body  { font-size:14px; color:var(--sub); line-height:1.7; }
+
+    /* ─── Testimonials ─── */
+    .testi-grid { margin-top:44px; display:flex; flex-direction:column; gap:16px; }
+    .testi-card {
+      background:var(--surface); border-radius:var(--r-xl); padding:28px;
+      border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,.06);
+      transition:box-shadow .2s, transform .2s;
+    }
+    .testi-card:hover { box-shadow:0 8px 32px rgba(0,0,0,.1); transform:translateY(-3px); }
+    .testi-stars { display:flex; gap:2px; margin-bottom:12px; font-size:16px; }
+    .testi-quote { font-size:15px; line-height:1.7; color:var(--text); margin-bottom:16px; }
+    .testi-author { display:flex; align-items:center; gap:10px; }
+    .testi-av { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; flex-shrink:0; }
+    .testi-name { font-size:14px; font-weight:700; }
+    .testi-meta { font-size:12px; color:var(--sub); }
 
     /* ─── Waitlist ─── */
-    .waitlist { background: var(--bg); color: var(--text); padding: 72px 0; border-top: 1px solid var(--border); }
-    .waitlist .container { text-align: center; }
-    .waitlist__title {
-      font-size: clamp(26px, 6vw, 44px); font-weight: 800;
-      line-height: 1.15; margin-bottom: 10px; letter-spacing: -.5px;
-    }
-    .waitlist__sub { font-size: 15px; color: var(--sub); max-width: 380px; margin: 0 auto 36px; }
-
-    .waitlist__form  { max-width: 440px; margin: 0 auto; }
-    .waitlist__input-row { display: flex; flex-direction: row; align-items: stretch; gap: 8px; margin-bottom: 10px; }
-    .country-picker { display: flex; position: relative; }
-    .waitlist__flag {
-      background: var(--surface); border: 2px solid var(--border);
-      border-radius: var(--r-md); padding: 0 14px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; white-space: nowrap; color: var(--text);
-      gap: 6px; font-size: 15px; font-weight: 600; height: 54px;
-    }
-    .waitlist__flag [data-lucide] { width: 14px; height: 14px; stroke: var(--sub); stroke-width: 2.5; fill: none; transition: transform .2s; }
-    .waitlist__flag.open [data-lucide] { transform: rotate(180deg); }
-    .waitlist__input {
-      flex: 1; background: var(--surface); border: 2px solid var(--border);
-      border-radius: var(--r-md); padding: 16px 14px; font-size: 17px; color: var(--text);
-      outline: none; height: 54px; min-width: 0;
-    }
-    .waitlist__input::placeholder { color: #9CA3AF; }
-    .waitlist__input:focus { border-color: var(--primary); }
-    .waitlist__btn {
-      width: 100%; background: var(--primary); color: #fff;
-      border: none; border-radius: var(--r-md); padding: 16px;
-      font-size: 16px; font-weight: 800; cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: transform .15s, background .2s;
-      box-shadow: 0 4px 24px rgba(91,79,217,.35);
-    }
-    .waitlist__btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .waitlist { background:var(--bg); padding:88px 0; border-top:1px solid var(--border); }
+    .waitlist .container { text-align:center; }
+    .waitlist__title { font-size:clamp(28px,6vw,48px); font-weight:800; line-height:1.12; margin-bottom:12px; letter-spacing:-.5px; }
+    .waitlist__sub { font-size:16px; color:var(--sub); max-width:380px; margin:0 auto 40px; }
+    .waitlist__form { max-width:440px; margin:0 auto; }
+    .waitlist__input-row { display:flex; align-items:stretch; gap:8px; margin-bottom:10px; }
+    .country-picker { display:flex; position:relative; }
+    .waitlist__flag { background:var(--surface); border:2px solid var(--border); border-radius:var(--r-md); padding:0 14px; display:flex; align-items:center; justify-content:center; cursor:pointer; white-space:nowrap; color:var(--text); gap:6px; font-size:15px; font-weight:600; height:54px; }
+    .waitlist__flag [data-lucide] { width:14px; height:14px; stroke:var(--sub); stroke-width:2.5; fill:none; transition:transform .2s; }
+    .waitlist__flag.open [data-lucide] { transform:rotate(180deg); }
+    .waitlist__input { flex:1; background:var(--surface); border:2px solid var(--border); border-radius:var(--r-md); padding:16px 14px; font-size:17px; color:var(--text); outline:none; height:54px; min-width:0; }
+    .waitlist__input::placeholder { color:#9CA3AF; }
+    .waitlist__input:focus { border-color:var(--primary); }
+    .waitlist__btn { width:100%; background:var(--primary); color:#fff; border:none; border-radius:var(--r-md); padding:16px; font-size:16px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .15s,background .2s; box-shadow:0 4px 24px rgba(91,79,217,.35); }
+    .waitlist__btn:hover { background:var(--primary-dark); transform:translateY(-2px); }
     .waitlist__btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
-    .waitlist__btn [data-lucide] { width: 18px; height: 18px; stroke: #fff; stroke-width: 2.5; fill: none; }
-
-    .waitlist__success {
-      display: none; text-align: center; padding: 36px;
-      background: var(--primary-light); border-radius: var(--r-xl);
-      border: 1px solid rgba(91,79,217,.15);
-    }
-    .waitlist__success.show { display: block; }
-    .waitlist__form.hide    { display: none; }
-    .waitlist__trust { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; font-size: 13px; color: var(--sub); }
-    .waitlist__trust [data-lucide] { width: 13px; height: 13px; stroke: var(--sub); stroke-width: 2.5; fill: none; flex-shrink: 0; }
-    .success-icon [data-lucide] { width: 52px; height: 52px; stroke: var(--primary); stroke-width: 1.5; fill: none; margin: 0 auto 16px; display: block; }
-    .success-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
-    .success-body  { font-size: 16px; color: var(--sub); }
-
-    .field-error { color: #FFB3B3; font-size: 13px; margin-top: -6px; margin-bottom: 10px; text-align: left; display: none; }
-    .field-error.show { display: block; }
-
-    /* Country dropdown */
-    .country-dropdown {
-      display: none; position: absolute; top: calc(100% + 8px); left: 0;
-      width: 280px; max-height: 300px;
-      background: #fff; border-radius: var(--r-lg);
-      box-shadow: 0 8px 40px rgba(0,0,0,.22);
-      overflow: hidden; z-index: 200; flex-direction: column;
-    }
-    .country-dropdown.open { display: flex; }
-    .country-search {
-      padding: 12px 14px; border: none; border-bottom: 1px solid var(--border);
-      font-size: 14px; outline: none; color: var(--text); width: 100%;
-    }
-    .country-search::placeholder { color: #9CA3AF; }
-    .country-list { overflow-y: auto; }
-    .country-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--text);
-    }
-    .country-item:hover, .country-item.active { background: var(--primary-light); }
-    .country-item.active { font-weight: 600; }
-    .country-item__flag { font-size: 18px; }
-    .country-item__name { flex: 1; }
-    .country-item__code { color: var(--sub); font-size: 13px; }
+    .waitlist__btn [data-lucide] { width:18px; height:18px; stroke:#fff; stroke-width:2.5; fill:none; }
+    .waitlist__success { display:none; text-align:center; padding:40px; background:var(--primary-light); border-radius:var(--r-xl); border:1px solid rgba(91,79,217,.15); }
+    .waitlist__success.show { display:block; }
+    .waitlist__form.hide { display:none; }
+    .waitlist__trust { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; font-size:13px; color:var(--sub); }
+    .waitlist__trust [data-lucide] { width:13px; height:13px; stroke:var(--sub); stroke-width:2.5; fill:none; }
+    .success-icon [data-lucide] { width:52px; height:52px; stroke:var(--primary); stroke-width:1.5; fill:none; margin:0 auto 16px; display:block; }
+    .success-title { font-size:24px; font-weight:800; margin-bottom:8px; }
+    .success-body  { font-size:16px; color:var(--sub); }
+    .field-error { color:var(--error); font-size:13px; margin-top:-6px; margin-bottom:10px; text-align:left; display:none; }
+    .field-error.show { display:block; }
+    .country-dropdown { display:none; position:absolute; top:calc(100% + 8px); left:0; width:280px; max-height:300px; background:#fff; border-radius:var(--r-lg); box-shadow:0 8px 40px rgba(0,0,0,.22); overflow:hidden; z-index:200; flex-direction:column; }
+    .country-dropdown.open { display:flex; }
+    .country-search { padding:12px 14px; border:none; border-bottom:1px solid var(--border); font-size:14px; outline:none; color:var(--text); width:100%; }
+    .country-search::placeholder { color:#9CA3AF; }
+    .country-list { overflow-y:auto; }
+    .country-item { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; font-size:14px; color:var(--text); }
+    .country-item:hover,.country-item.active { background:var(--primary-light); }
+    .country-item.active { font-weight:600; }
+    .country-item__flag { font-size:18px; }
+    .country-item__name { flex:1; }
+    .country-item__code { color:var(--sub); font-size:13px; }
 
     /* ─── Footer ─── */
-    .footer {
-      background: #08051A; color: rgba(255,255,255,.3);
-      text-align: center; padding: 28px 20px; font-size: 13px;
-    }
-
-    /* ─── Fade-up ─── */
-    .fade-up { opacity: 0; transform: translateY(20px); transition: opacity .5s ease, transform .5s ease; }
-    .fade-up.in { opacity: 1; transform: none; }
-
-    [data-lucide] { display: block; flex-shrink: 0; }
-
-    /* ─── Mobile: frameless full-bleed app screen ─── */
-    .mob-demo  { display: none; }
-    .demo-hint { display: none; }
-    .demo-scene { min-height: 0; }
-
-    /* Hero fills full viewport, phone peeks from the bottom */
-    .hero { min-height: 100svh; padding: 88px 0 52px; }
-    /* Bigger tabs on mobile */
-    .screen-tab { font-size: 13px; padding: 10px 0 11px; }
-    /* Bigger toast on mobile */
-    .phone-toast { padding: 7px 14px 7px 7px; }
-    .phone-toast__dot   { width: 30px; height: 30px; font-size: 11px; }
-    .phone-toast__label { font-size: 12px; }
-    .phone-toast__thumb { width: 30px; height: 30px; border-radius: 8px; }
-    .hero__title { margin-bottom: 24px; font-size: clamp(32px, 8.5vw, 68px); letter-spacing: -0.5px; line-height: 1.12; word-spacing: 2px; }
-    .hero__title em { color: var(--text); opacity: .28; font-style: normal; display: block; margin-top: 8px; font-size: .82em; }
-    .hero__sub   { margin-bottom: 44px; }
-    .hero__demo-wrap { margin-top: 72px; }
-    .iphone-wrap { width: 88%; }
-
-    /* Face detection caption,below the screen, mobile only */
-    .mob-caption {
-      min-height: 52px; display: flex; align-items: center; justify-content: center;
-      padding: 14px 20px 0;
-    }
-    .mob-cap-pill {
-      display: inline-flex; align-items: center; gap: 9px;
-      color: rgba(255,255,255,.8); font-size: 15px; font-weight: 600;
-      animation: capIn .35s ease forwards; white-space: nowrap;
-    }
-    .mob-cap-pill span { white-space: nowrap; }
-    .mob-cap-avs { display: flex; flex-shrink: 0; }
-    .mob-cap-av {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800; color: #1C1B1F;
-      border: 2px solid rgba(14,10,36,.25); margin-left: -7px;
-    }
-    .mob-cap-av:first-child { margin-left: 0; }
-    @keyframes capIn {
-      from { opacity:0; transform: translateY(8px); }
-      to   { opacity:1; transform: translateY(0); }
-    }
+    .footer { background:var(--primary); color:rgba(255,255,255,.65); padding:64px 0 36px; }
+    .footer__top { display:flex; flex-direction:column; gap:44px; padding-bottom:44px; border-bottom:1px solid rgba(255,255,255,.18); }
+    .footer__brand { display:flex; flex-direction:column; gap:12px; }
+    .footer__logo { display:flex; align-items:center; gap:10px; text-decoration:none; width:fit-content; }
+    .footer__logo-icon { width:30px; height:30px; border-radius:8px; object-fit:cover; }
+    .footer__logo-text { font-size:18px; font-weight:800; color:#fff; letter-spacing:-.5px; }
+    .footer__tagline { font-size:14px; color:rgba(255,255,255,.38); line-height:1.6; max-width:200px; }
+    .footer__cols { display:flex; flex-direction:column; gap:32px; }
+    .footer__col-title { font-size:12px; font-weight:700; color:#fff; letter-spacing:.8px; text-transform:uppercase; margin-bottom:16px; }
+    .footer__col-links { display:flex; flex-direction:column; gap:10px; }
+    .footer__col-link { font-size:14px; color:rgba(255,255,255,.42); text-decoration:none; transition:color .2s; }
+    .footer__col-link:hover { color:#fff; }
+    .footer__bottom { padding-top:28px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
+    .footer__copy { font-size:13px; color:rgba(255,255,255,.22); }
+    .footer__legal { display:flex; gap:20px; }
+    .footer__legal a { font-size:13px; color:rgba(255,255,255,.3); text-decoration:none; }
+    .footer__legal a:hover { color:rgba(255,255,255,.7); }
 
     /* ─── Desktop ─── */
-    @media(min-width: 641px) {
-      .section { padding: 80px 0; }
-      .hero { padding: 80px 0 0; }
-      .demo-scene { min-height: 440px; }
-      .hero { min-height: 0; }
-      .screen-tab { font-size: 9px; padding: 6px 0 7px; }
-      .hero__title { font-size: clamp(36px, 10vw, 68px); }
-      .hero__title em { color: var(--accent); opacity: 1; display: inline; margin-top: 0; }
-      .hero__demo-wrap { margin-top: 48px; }
-      .iphone-wrap { width: 220px; }
-      .mob-caption { display: none; }
-      .sender-stream { display: block; }
-      .demo-hint { display: flex; }
-      .waitlist__flag { padding: 0 18px; }
-      .prob-item { padding: 24px 0; }
-      .feat-list { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
-      .feat-item { border-top: none; flex-direction: column; gap: 10px; padding: 32px 28px 32px 0; border-right: 1px solid var(--border); border-bottom: none; }
-      .feat-item:nth-child(2) { padding: 32px 28px; }
-      .feat-item:last-child { border-right: none; border-bottom: none; padding-left: 28px; }
+    @media(min-width:641px) {
+      .section { padding:104px 0; }
+      .showcase { padding:104px 0; }
+      .waitlist { padding:104px 0; }
+
+      /* Nav */
+      .nav__links { display:flex; }
+      .nav__burger { display:none; }
+      .nav__cta { display:inline-flex; }
+
+      /* Hero */
+      .hero { min-height:0; padding:calc(var(--nav-h) + 80px) 0 0; }
+      .hero__stage { min-height:460px; }
+      .stage-pill { display:flex; }
+      .phone--hero-main { width:220px; }
+      .phone--hero-side-l,.phone--hero-side-r { width:170px; }
+      .phone--hero-side-l { margin-right:-28px; margin-bottom:-16px; }
+      .phone--hero-side-r { margin-left:-28px; margin-bottom:-16px; }
+
+      /* Showcase */
+      .showcase-phones { gap:20px; }
+      .phone--sc-main { width:200px; }
+      .phone--sc-side { width:162px; }
+      .showcase-phones > .sc-phone-wrap:first-child,
+      .showcase-phones > .sc-phone-wrap:last-child { margin-bottom:36px; }
+      .phone--sc-side .iphone-frame { border-radius:38px; }
+      .phone--sc-side .dynamic-island { width:86px; height:25px; }
+
+      /* Features */
+      .feat-list { display:grid; grid-template-columns:1fr 1fr; }
+      .feat-item { flex-direction:column; border-top:1px solid var(--border); border-right:1px solid var(--border); padding:32px 32px 32px 0; }
+      .feat-item:nth-child(2n) { border-right:none; padding:32px 0 32px 32px; }
+      .feat-item:nth-child(n+3) { border-bottom:1px solid var(--border); }
+      .feat-item:last-child { border-bottom:1px solid var(--border); }
+
+      /* Testimonials */
+      .testi-grid { flex-direction:row; }
+      .testi-card { flex:1; }
+
+      /* Footer */
+      .footer__top { flex-direction:row; gap:64px; }
+      .footer__brand { flex:1.4; }
+      .footer__cols { flex:2; flex-direction:row; justify-content:space-between; gap:0; }
+      .footer__bottom { flex-direction:row; justify-content:space-between; }
     }
   </style>
 </head>
 <body>
 
+<!-- ─── Nav ─── -->
+<nav class="nav" id="nav">
+  <div class="container nav__inner">
+    <a href="index.html" class="nav__logo">
+      <img src="icon.png" alt="Rollout" class="nav__icon" />
+      <span class="nav__logo-text">Rollout</span>
+    </a>
+    <div class="nav__links">
+      <a href="index.html" class="nav__link active">Home</a>
+      <a href="features.html" class="nav__link">Features</a>
+      <a href="how-it-works.html" class="nav__link">How it works</a>
+      <a href="about.html" class="nav__link">About</a>
+    </div>
+    <a href="#waitlist" class="btn-primary btn-primary--sm nav__cta">Get Early Access</a>
+    <button class="nav__burger" id="navBurger" aria-label="Open menu">
+      <i data-lucide="menu"></i>
+    </button>
+  </div>
+  <div class="nav__mobile" id="navMobile">
+    <a href="index.html" class="nav__mobile-link">Home</a>
+    <a href="features.html" class="nav__mobile-link">Features</a>
+    <a href="how-it-works.html" class="nav__mobile-link">How it works</a>
+    <a href="about.html" class="nav__mobile-link">About</a>
+    <a href="#waitlist" class="btn-primary" style="margin-top:8px">Get Early Access</a>
+  </div>
+</nav>
+
 
 <!-- ─── Hero ─── -->
 <section class="hero">
-  <div class="container">
+  <div class="hero__blobs">
+    <div class="blob blob--1"></div>
+    <div class="blob blob--2"></div>
+    <div class="blob blob--3"></div>
+  </div>
+  <div class="hero__particles" id="particles"></div>
+
+  <div class="container hero__content">
+    <div class="hero__badge">
+      <div class="badge-dot"></div>
+      Now in private beta
+    </div>
+
     <h1 class="hero__title">
       Every photo taken<br/>at your <span class="hero__word" id="heroWord">party.</span><br/><em>finds you, live.</em>
     </h1>
 
     <p class="hero__sub">
-      Scan one QR. Every photo from every phone syncs live, and face detection finds every shot of you across the whole group.
+      Scan one QR. Every photo from every phone syncs live — and face detection finds every shot of you across the whole group.
     </p>
 
     <div class="hero__ctas">
       <a href="#waitlist" class="btn-primary">
         Join the Waitlist <i data-lucide="arrow-right"></i>
       </a>
-      <a href="#how-it-works" class="btn-secondary">Want to know more?</a>
+      <a href="how-it-works.html" class="btn-secondary">See how it works</a>
     </div>
 
-    <div class="hero__demo-wrap fade-up">
-      <div class="demo-scene">
-        <div class="sender-stream" id="senderStream"></div>
+    <!-- Three-phone stage -->
+    <div class="hero__stage">
+      <div class="stage-glow"></div>
 
-        <div class="iphone-wrap demo-phone">
+      <!-- Floating pills (desktop only) -->
+      <div class="stage-pill stage-pill--left">
+        <div class="stage-pill__dot" style="background:#22C55E"></div>
+        Live · 8 people syncing
+      </div>
+      <div class="stage-pill stage-pill--right">
+        <div class="stage-pill__dot" style="background:#5B4FD9"></div>
+        47 photos · full quality
+      </div>
+
+      <div class="stage-phones">
+        <!-- Left phone: QR room joining -->
+        <div class="iphone-wrap phone--hero-side-l">
           <div class="iphone-frame">
-            <div class="iphone-mute"></div>
-            <div class="iphone-vol-up"></div>
-            <div class="iphone-vol-down"></div>
-            <div class="iphone-power"></div>
+            <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
             <div class="iphone-screen">
               <div class="dynamic-island"></div>
               <div class="iphone-status">
                 <span class="iphone-time">9:41</span>
-                <div class="iphone-icons">
-                  <div class="iphone-signal"><b></b><b></b><b></b><b></b></div>
-                  <div class="iphone-battery"></div>
+                <div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div>
+              </div>
+              <div class="qr-screen">
+                <div class="qr-event-name">✈️ Goa Trip 2025</div>
+                <div class="qr-box">
+                  <div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div>
+                  <div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div><div class="qr-cell qr-on"></div><div class="qr-cell"></div>
+                  <div class="qr-scan-line"></div>
+                </div>
+                <div class="qr-sub">Scan to join instantly</div>
+                <div class="qr-members" style="display:flex;align-items:center;margin-top:2px;gap:0">
+                  <div class="qr-av" style="background:#D1FAE5;color:#065F46">P</div>
+                  <div class="qr-av" style="background:#DDD6FE;color:#4C1D95;margin-left:-5px">R</div>
+                  <div class="qr-av" style="background:#FDE8D0;color:#92400E;margin-left:-5px">A</div>
+                  <span class="qr-count" style="margin-left:6px;font-size:7px;color:var(--sub)">+2 joined</span>
                 </div>
               </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
+        </div>
 
+        <!-- Center phone: Live grid (main demo) -->
+        <div class="iphone-wrap phone--hero-main">
+          <div class="iphone-frame">
+            <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+            <div class="iphone-screen">
+              <div class="dynamic-island"></div>
+              <div class="iphone-status">
+                <span class="iphone-time">9:41</span>
+                <div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div>
+              </div>
               <div class="screen-header">
                 <span class="screen-emoji" id="demoIcon">✈️</span>
                 <div style="flex:1;min-width:0;overflow:hidden">
                   <div class="screen-title" id="demoRoomName">Goa Trip 2025</div>
                   <div class="screen-sub" id="demoSubtitle">5 people · 0 photos</div>
                 </div>
-                <div class="live-indicator">
-                  <div class="live-dot"></div>
-                  <span class="live-text">LIVE</span>
-                </div>
+                <div class="live-indicator"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
               </div>
               <div class="screen-tabs">
                 <div class="screen-tab active">All</div>
                 <div class="screen-tab">People</div>
-                <div class="screen-tab">Your Photos</div>
+                <div class="screen-tab">Yours</div>
               </div>
               <div class="notif-host" id="inPhoneNotif"></div>
               <div class="photo-grid" id="demoGrid"></div>
@@ -556,26 +700,56 @@
           </div>
         </div>
 
-        <!-- Mobile card demo -->
-        <div class="mob-demo" id="mobDemo">
-          <div class="mob-pill" id="mobPill"></div>
-          <div class="mob-card" id="mobCard">
-            <div class="mob-face-badge" id="mobFace"></div>
-          </div>
-          <div class="mob-counter">
-            <span class="mob-live-dot"></span>
-            <span id="mobCounter">0 photos · 5 people</span>
+        <!-- Right phone: Face detection -->
+        <div class="iphone-wrap phone--hero-side-r">
+          <div class="iphone-frame">
+            <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+            <div class="iphone-screen">
+              <div class="dynamic-island"></div>
+              <div class="iphone-status">
+                <span class="iphone-time">9:41</span>
+                <div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div>
+              </div>
+              <div class="screen-header">
+                <span class="screen-emoji">✈️</span>
+                <div style="flex:1;min-width:0"><div class="screen-title">Goa Trip 2025</div></div>
+              </div>
+              <div class="screen-tabs">
+                <div class="screen-tab">All</div>
+                <div class="screen-tab">People</div>
+                <div class="screen-tab active">Yours</div>
+              </div>
+              <div class="face-screen">
+                <div class="face-you-banner">
+                  <div class="face-you-av">Y</div>
+                  <span class="face-you-txt">12 photos of you</span>
+                </div>
+                <div class="face-grid">
+                  <div class="face-cell" style="background:#D1FAE5">
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#DDD6FE">
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#FDE8D0">
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#DBEAFE">
+                    <div class="face-highlight"><span class="face-tag">you</span></div>
+                  </div>
+                  <div class="face-cell" style="background:#FEF3C7"></div>
+                  <div class="face-cell" style="background:#FCE7F3"></div>
+                </div>
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
           </div>
         </div>
       </div>
-
-      <p class="demo-hint">
-        <i data-lucide="zap"></i>
-        <span>Photos from 5 phones,syncing live while the trip is still happening</span>
-      </p>
     </div>
   </div>
 </section>
+
 
 
 <!-- ─── Problem ─── -->
@@ -590,7 +764,7 @@
         <span class="prob-num">1</span>
         <div>
           <div class="prob-title">"Who has the photos?"</div>
-          <div class="prob-body">You ask in the group. Three people reply. The one with the best shots? Silent forever.</div>
+          <div class="prob-body">You ask in the group chat. Three people reply. The one with the best shots? Silent forever.</div>
         </div>
       </div>
       <div class="prob-item fade-up">
@@ -612,33 +786,118 @@
 </section>
 
 
-<!-- ─── How it works ─── -->
-<section class="section" id="how-it-works">
-  <div class="container">
-    <span class="overline">How it works</span>
-    <h2 class="section-title fade-up">Set up in 10 seconds.<br/>Photos for a lifetime.</h2>
 
-    <div class="flow-list">
-      <div class="flow-item fade-up">
-        <span class="flow-num">1</span>
-        <div>
-          <div class="flow-title">Anyone creates a room</div>
-          <div class="flow-body">Name the event, tap create. A shareable QR code appears instantly, no signup, no settings.</div>
+
+<!-- ─── Showcase (dark) ─── -->
+<section class="showcase">
+  <div class="container showcase-wrap">
+    <span class="overline fade-up">The experience</span>
+    <h2 class="section-title fade-up">Every state of the app,<br/>built for the moment.</h2>
+    <p class="section-sub fade-up">From creation to collection — the whole journey in one shared space.</p>
+
+    <div class="showcase-phones" id="showcasePhones">
+      <!-- Phone 1: Create event -->
+      <div class="sc-phone-wrap">
+        <div class="sc-phone" id="scPhone0">
+          <div class="iphone-wrap phone--sc-side">
+            <div class="iphone-frame iphone-frame--dark">
+              <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+              <div class="iphone-screen iphone-screen--dark">
+                <div class="dynamic-island"></div>
+                <div class="iphone-status">
+                  <span class="iphone-time">9:41</span>
+                  <div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div>
+                </div>
+                <div class="create-screen create-screen--dark">
+                  <div class="cs-title">New Event</div>
+                  <div style="margin-top:4px">
+                    <div class="cs-label">Event name</div>
+                    <div class="cs-input focused">Goa Trip 2025</div>
+                  </div>
+                  <div>
+                    <div class="cs-label">Pick an emoji</div>
+                    <div class="cs-emojis">
+                      <div class="cs-emoji sel">✈️</div>
+                      <div class="cs-emoji">🎉</div>
+                      <div class="cs-emoji">💍</div>
+                      <div class="cs-emoji">🏔️</div>
+                    </div>
+                  </div>
+                  <div class="cs-btn">Create Room →</div>
+                </div>
+                <div class="iphone-home-bar"></div>
+              </div>
+            </div>
+          </div>
         </div>
+        <div class="sc-label">Create</div>
       </div>
-      <div class="flow-item fade-up">
-        <span class="flow-num">2</span>
-        <div>
-          <div class="flow-title">Everyone scans at the event</div>
-          <div class="flow-body">Show the QR. Friends scan it. They're in, no account, no app install, in under 5 seconds.</div>
+
+      <!-- Phone 2: Live grid (center, main) -->
+      <div class="sc-phone-wrap">
+        <div class="sc-phone" id="scPhone1" style="transition-delay:.14s">
+          <div class="iphone-wrap phone--sc-main">
+            <div class="iphone-frame">
+              <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+              <div class="iphone-screen">
+                <div class="dynamic-island"></div>
+                <div class="iphone-status"><span class="iphone-time">9:41</span><div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div></div>
+                <div class="screen-header">
+                  <span class="screen-emoji">✈️</span>
+                  <div style="flex:1;min-width:0"><div class="screen-title">Goa Trip 2025</div><div class="screen-sub">5 people · 31 photos</div></div>
+                  <div class="live-indicator"><div class="live-dot"></div><span class="live-text">LIVE</span></div>
+                </div>
+                <div class="screen-tabs">
+                  <div class="screen-tab active">All</div><div class="screen-tab">People</div><div class="screen-tab">Yours</div>
+                </div>
+                <div class="photo-grid">
+                  <div class="photo-cell c3"></div><div class="photo-cell c1"></div><div class="photo-cell c5"></div>
+                  <div class="photo-cell c2"></div><div class="photo-cell c7"></div><div class="photo-cell c4"></div>
+                  <div class="photo-cell c8"></div><div class="photo-cell c6"></div><div class="photo-cell c9"></div>
+                  <div class="photo-cell c1"></div><div class="photo-cell c3"></div><div class="photo-cell c2"></div>
+                </div>
+                <div class="iphone-home-bar"></div>
+              </div>
+            </div>
+          </div>
         </div>
+        <div class="sc-label">Sync live</div>
       </div>
-      <div class="flow-item fade-up">
-        <span class="flow-num">3</span>
-        <div>
-          <div class="flow-title">Photos appear as they're taken</div>
-          <div class="flow-body">Every shot from every phone lands in the shared room live, while you're all still together.</div>
+
+      <!-- Phone 3: Face detection -->
+      <div class="sc-phone-wrap">
+        <div class="sc-phone" id="scPhone2" style="transition-delay:.28s">
+          <div class="iphone-wrap phone--sc-side">
+            <div class="iphone-frame">
+              <div class="iphone-mute"></div><div class="iphone-vol-up"></div><div class="iphone-vol-down"></div><div class="iphone-power"></div>
+              <div class="iphone-screen">
+                <div class="dynamic-island"></div>
+                <div class="iphone-status"><span class="iphone-time">9:41</span><div class="iphone-icons"><div class="iphone-signal"><b></b><b></b><b></b><b></b></div><div class="iphone-battery"></div></div></div>
+                <div class="screen-header">
+                  <span class="screen-emoji">✈️</span>
+                  <div style="flex:1;min-width:0"><div class="screen-title">Goa Trip 2025</div></div>
+                </div>
+                <div class="screen-tabs">
+                  <div class="screen-tab">All</div><div class="screen-tab">People</div><div class="screen-tab active">Yours</div>
+                </div>
+                <div class="face-screen">
+                  <div class="face-you-banner">
+                    <div class="face-you-av">Y</div>
+                    <span class="face-you-txt">12 photos of you</span>
+                  </div>
+                  <div class="face-grid">
+                    <div class="face-cell" style="background:#D1FAE5"><div class="face-highlight"><span class="face-tag">you</span></div></div>
+                    <div class="face-cell" style="background:#DDD6FE"><div class="face-highlight"><span class="face-tag">you</span></div></div>
+                    <div class="face-cell" style="background:#FDE8D0"><div class="face-highlight"><span class="face-tag">you</span></div></div>
+                    <div class="face-cell" style="background:#DBEAFE"><div class="face-highlight"><span class="face-tag">you</span></div></div>
+                  </div>
+                </div>
+                <div class="iphone-home-bar"></div>
+              </div>
+            </div>
+          </div>
         </div>
+        <div class="sc-label" style="color:rgba(255,255,255,.38)">Find yourself</div>
       </div>
     </div>
   </div>
@@ -649,21 +908,21 @@
 <section class="section section--white">
   <div class="container">
     <span class="overline">Why Rollout</span>
-    <h2 class="section-title fade-up">Built for the moment,<br/>not after it</h2>
+    <h2 class="section-title fade-up">Built for the moment,<br/>not after it.</h2>
 
     <div class="feat-list">
       <div class="feat-item fade-up">
         <div class="feat-icon"><i data-lucide="zap"></i></div>
         <div>
           <div class="feat-title">Live sync, no waiting</div>
-          <div class="feat-body">Photos appear while the event is still happening. Not "I'll send them later", that text never gets a reply.</div>
+          <div class="feat-body">Photos appear while the event is still happening — not "I'll send them later," which never happens.</div>
         </div>
       </div>
       <div class="feat-item fade-up">
         <div class="feat-icon"><i data-lucide="scan-face"></i></div>
         <div>
           <div class="feat-title">Find every photo you're in</div>
-          <div class="feat-body">On-device face detection finds all photos of you, across every phone in the group. One tap.</div>
+          <div class="feat-body">On-device face detection finds all photos of you across every phone in the group. One tap.</div>
         </div>
       </div>
       <div class="feat-item fade-up">
@@ -671,6 +930,58 @@
         <div>
           <div class="feat-title">Zero friction for everyone</div>
           <div class="feat-body">No account needed to join. Scan the QR, upload photos. The bar to participate is basically nothing.</div>
+        </div>
+      </div>
+      <div class="feat-item fade-up">
+        <div class="feat-icon"><i data-lucide="image"></i></div>
+        <div>
+          <div class="feat-title">Full resolution, always</div>
+          <div class="feat-body">Original quality. No compression, no pixelated thumbnails. The photos you get back are the photos that were taken.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ─── Testimonials ─── -->
+<section class="section" style="display:none">
+  <div class="container">
+    <span class="overline">Early testers</span>
+    <h2 class="section-title fade-up">People who've tried it.</h2>
+
+    <div class="testi-grid">
+      <div class="testi-card fade-up">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-quote">"We did a Goa trip with 8 people. By the time we landed back home, everyone had every photo from every phone. No chasing, no WhatsApp compression. Genuinely magical."</p>
+        <div class="testi-author">
+          <div class="testi-av" style="background:#D1FAE5;color:#065F46">P</div>
+          <div>
+            <div class="testi-name">Priya S.</div>
+            <div class="testi-meta">Goa trip, Jan 2025</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card fade-up">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-quote">"Used this at our office party. The face detection thing is wild — I just tapped 'my photos' and it found 34 shots of me I didn't even know existed. Showed them on the projector."</p>
+        <div class="testi-author">
+          <div class="testi-av" style="background:#DBEAFE;color:#1E40AF">V</div>
+          <div>
+            <div class="testi-name">Vikram T.</div>
+            <div class="testi-meta">Office party, Dec 2024</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card fade-up">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-quote">"Our wedding photographer missed half the candids. But Rollout had everything — guests' phones, full quality. We're making our wedding album from those photos."</p>
+        <div class="testi-author">
+          <div class="testi-av" style="background:#FCE7F3;color:#9D174D">D</div>
+          <div>
+            <div class="testi-name">Divya & Arjun</div>
+            <div class="testi-meta">Wedding, Nov 2024</div>
+          </div>
         </div>
       </div>
     </div>
@@ -687,7 +998,7 @@
     <div class="waitlist__form" id="waitlistForm">
       <div class="waitlist__input-row">
         <div class="country-picker">
-          <button class="waitlist__flag" id="flagBtn" type="button" aria-label="Select country code">
+          <button class="waitlist__flag" id="flagBtn" type="button" aria-label="Select country">
             🇮🇳 +91 <i data-lucide="chevron-down"></i>
           </button>
           <div class="country-dropdown" id="countryDropdown">
@@ -695,8 +1006,7 @@
             <div class="country-list" id="countryList"></div>
           </div>
         </div>
-        <input class="waitlist__input" id="phoneInput" type="tel"
-          placeholder="98765 43210" maxlength="15" inputmode="numeric" autocomplete="tel" />
+        <input class="waitlist__input" id="phoneInput" type="tel" placeholder="98765 43210" maxlength="15" inputmode="numeric" autocomplete="tel" />
       </div>
       <div class="field-error" id="phoneError">Please enter a valid phone number.</div>
       <button class="waitlist__btn" id="submitBtn" type="button">
@@ -716,7 +1026,48 @@
 
 <!-- ─── Footer ─── -->
 <footer class="footer">
-  <p>© 2026 Rollout. All rights reserved.</p>
+  <div class="container">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="index.html" class="footer__logo">
+          <img src="icon.png" alt="Rollout" class="footer__logo-icon" />
+          <span class="footer__logo-text">Rollout</span>
+        </a>
+        <p class="footer__tagline">Every photo from every phone, found and synced, live.</p>
+      </div>
+      <div class="footer__cols">
+        <div>
+          <div class="footer__col-title">Product</div>
+          <div class="footer__col-links">
+            <a href="features.html" class="footer__col-link">Features</a>
+            <a href="how-it-works.html" class="footer__col-link">How it works</a>
+            <a href="#waitlist" class="footer__col-link">Join waitlist</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer__col-title">Company</div>
+          <div class="footer__col-links">
+            <a href="about.html" class="footer__col-link">About</a>
+            <a href="mailto:hello@rollouts.in" class="footer__col-link">Contact</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer__col-title">Legal</div>
+          <div class="footer__col-links">
+            <a href="privacy-policy.html" class="footer__col-link">Privacy Policy</a>
+            <a href="terms.html" class="footer__col-link">Terms &amp; Conditions</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span class="footer__copy">© 2026 Rollout. All rights reserved.</span>
+      <div class="footer__legal">
+        <a href="privacy-policy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+    </div>
+  </div>
 </footer>
 
 
@@ -724,307 +1075,255 @@
 <script>
   lucide.createIcons();
 
-  // Fade-up observer
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
-  }, { threshold: 0.1, rootMargin: '0px 0px -24px 0px' });
-  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+  /* ── Nav scroll ── */
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 20);
+  }, { passive: true });
 
-  // Rotating word with per-word color
+  /* ── Mobile nav ── */
+  document.getElementById('navBurger').addEventListener('click', () => {
+    const mobile = document.getElementById('navMobile');
+    const isOpen = mobile.classList.toggle('open');
+    const icon = document.querySelector('#navBurger [data-lucide]');
+    icon.setAttribute('data-lucide', isOpen ? 'x' : 'menu');
+    lucide.createIcons();
+  });
+  document.querySelectorAll('.nav__mobile-link').forEach(el => {
+    el.addEventListener('click', () => {
+      document.getElementById('navMobile').classList.remove('open');
+      const icon = document.querySelector('#navBurger [data-lucide]');
+      icon.setAttribute('data-lucide', 'menu');
+      lucide.createIcons();
+    });
+  });
+
+  /* ── Scroll reveal ── */
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); revealObs.unobserve(e.target); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
+  document.querySelectorAll('.fade-up,.fade-left,.fade-right').forEach(el => revealObs.observe(el));
+
+  /* ── Animated counters ── */
+  /* ── Particles ── */
+  const pContainer = document.getElementById('particles');
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `left:${Math.random()*100}%;top:${20+Math.random()*60}%;--dur:${3+Math.random()*4}s;--delay:${-Math.random()*5}s;opacity:0`;
+    pContainer.appendChild(p);
+  }
+
+  /* ── Hero rotating word ── */
   const OCCASIONS = [
-    { word: 'party',     color: '#F97316' },
-    { word: 'road trip', color: '#0891B2' },
-    { word: 'wedding',   color: '#E11D48' },
-    { word: 'trek',      color: '#16A34A' },
-    { word: 'reunion',   color: '#7C3AED' },
-    { word: 'concert',   color: '#DC2626' },
+    { word:'party',    color:'#F97316' },
+    { word:'road trip',color:'#0891B2' },
+    { word:'wedding',  color:'#E11D48' },
+    { word:'trek',     color:'#16A34A' },
+    { word:'reunion',  color:'#7C3AED' },
+    { word:'concert',  color:'#DC2626' },
   ];
-  let _wordIdx = 0;
+  let _wi = 0;
   setInterval(() => {
-    _wordIdx = (_wordIdx + 1) % OCCASIONS.length;
+    _wi = (_wi + 1) % OCCASIONS.length;
     const el = document.getElementById('heroWord');
     if (!el) return;
     el.style.animation = 'none'; void el.offsetHeight;
-    el.textContent = OCCASIONS[_wordIdx].word + '.';
-    el.style.color   = OCCASIONS[_wordIdx].color;
+    el.textContent = OCCASIONS[_wi].word + '.';
+    el.style.color = OCCASIONS[_wi].color;
     el.style.animation = 'wordIn .4s cubic-bezier(.34,1.56,.64,1)';
-  }, 2400);
+  }, 2600);
 
-  // Live photo demo
+  /* ── Mouse parallax for hero phones ── */
+  const heroPhones = document.querySelectorAll('.phone--hero-main, .phone--hero-side-l, .phone--hero-side-r');
+  let _mx = 0, _my = 0;
+  document.addEventListener('mousemove', e => {
+    _mx = (e.clientX / window.innerWidth - .5) * 2;
+    _my = (e.clientY / window.innerHeight - .5) * 2;
+  });
+  function parallaxTick() {
+    heroPhones.forEach((ph, i) => {
+      const s = i === 0 ? 1 : 0.7;
+      const tx = _mx * 8 * s;
+      const ty = _my * -5 * s;
+      const base = i === 1 ? 'rotate(-13deg)' : i === 2 ? 'rotate(10deg)' : 'rotate(-1deg)';
+      ph.style.transform = `translate(${tx}px,${ty}px) ${base} rotateY(${_mx*6}deg)`;
+    });
+    requestAnimationFrame(parallaxTick);
+  }
+  if (window.innerWidth >= 641) parallaxTick();
+
+  /* ── Live photo demo (center phone) ── */
   const DEMO_EVENTS = [
-    { name: 'Goa Trip 2025', icon: '✈️', members: 5, senders: [
-      { name: 'Priya',  init: 'P', color: '#D1FAE5', faces: [{ name: 'Rohan', init: 'R', color: '#DDD6FE' }, { name: 'Arjun', init: 'A', color: '#FDE8D0' }] },
-      { name: 'Rohan',  init: 'R', color: '#DDD6FE', faces: [{ name: 'Priya', init: 'P', color: '#D1FAE5' }] },
-      { name: 'Arjun',  init: 'A', color: '#FDE8D0', faces: [{ name: 'Meera', init: 'M', color: '#DBEAFE' }, { name: 'Priya', init: 'P', color: '#D1FAE5' }] },
-      { name: 'Meera',  init: 'M', color: '#DBEAFE', faces: [{ name: 'Rohan', init: 'R', color: '#DDD6FE' }] },
+    { name:'Goa Trip 2025', icon:'✈️', members:5, senders:[
+      { name:'Priya', init:'P', color:'#D1FAE5', faces:[{name:'Rohan',init:'R',color:'#DDD6FE'}] },
+      { name:'Rohan', init:'R', color:'#DDD6FE', faces:[{name:'Priya',init:'P',color:'#D1FAE5'}] },
+      { name:'Arjun', init:'A', color:'#FDE8D0', faces:[{name:'Meera',init:'M',color:'#DBEAFE'}] },
+      { name:'Meera', init:'M', color:'#DBEAFE', faces:[{name:'Priya',init:'P',color:'#D1FAE5'}] },
     ]},
-    { name: "Arushi's Wedding", icon: '💍', members: 8, senders: [
-      { name: 'Divya',  init: 'D', color: '#FCE7F3', faces: [{ name: 'Anika', init: 'A', color: '#FEF3C7' }, { name: 'Simran', init: 'S', color: '#E0E7FF' }] },
-      { name: 'Anika',  init: 'A', color: '#FEF3C7', faces: [{ name: 'Divya', init: 'D', color: '#FCE7F3' }] },
-      { name: 'Simran', init: 'S', color: '#E0E7FF', faces: [{ name: 'Neha', init: 'N', color: '#ECFDF5' }, { name: 'Anika', init: 'A', color: '#FEF3C7' }] },
-      { name: 'Neha',   init: 'N', color: '#ECFDF5', faces: [{ name: 'Simran', init: 'S', color: '#E0E7FF' }] },
+    { name:"Arushi's Wedding", icon:'💍', members:8, senders:[
+      { name:'Divya',  init:'D', color:'#FCE7F3', faces:[{name:'Anika',init:'A',color:'#FEF3C7'}] },
+      { name:'Anika',  init:'A', color:'#FEF3C7', faces:[{name:'Divya',init:'D',color:'#FCE7F3'}] },
+      { name:'Simran', init:'S', color:'#E0E7FF', faces:[{name:'Neha',init:'N',color:'#ECFDF5'}] },
+      { name:'Neha',   init:'N', color:'#ECFDF5', faces:[{name:'Simran',init:'S',color:'#E0E7FF'}] },
     ]},
-    { name: 'Spiti Trek 2025', icon: '🏔️', members: 6, senders: [
-      { name: 'Vikram', init: 'V', color: '#DBEAFE', faces: [{ name: 'Dev', init: 'D', color: '#D1FAE5' }, { name: 'Sam', init: 'S', color: '#FDE8D0' }] },
-      { name: 'Dev',    init: 'D', color: '#D1FAE5', faces: [{ name: 'Vikram', init: 'V', color: '#DBEAFE' }] },
-      { name: 'Sam',    init: 'S', color: '#FDE8D0', faces: [{ name: 'Raj', init: 'R', color: '#FEE2E2' }, { name: 'Dev', init: 'D', color: '#D1FAE5' }] },
-      { name: 'Raj',    init: 'R', color: '#FEE2E2', faces: [{ name: 'Sam', init: 'S', color: '#FDE8D0' }] },
+    { name:'Spiti Trek 2025', icon:'🏔️', members:6, senders:[
+      { name:'Vikram', init:'V', color:'#DBEAFE', faces:[{name:'Dev',init:'D',color:'#D1FAE5'}] },
+      { name:'Dev',    init:'D', color:'#D1FAE5', faces:[{name:'Sam',init:'S',color:'#FDE8D0'}] },
+      { name:'Sam',    init:'S', color:'#FDE8D0', faces:[{name:'Raj',init:'R',color:'#FEE2E2'}] },
+      { name:'Raj',    init:'R', color:'#FEE2E2', faces:[{name:'Vikram',init:'V',color:'#DBEAFE'}] },
     ]},
   ];
-  const TOPS = ['16%', '44%', '68%'];
-  let _dc = 0, _di = 0, _si = 0, _sd = false;
+  let _dc=0,_di=0,_si=0;
 
   function _tick() {
-    const ev = DEMO_EVENTS[_di];
-    const s  = ev.senders[_si % ev.senders.length];
-    const grid   = document.getElementById('demoGrid');
-    const stream = document.getElementById('senderStream');
-    if (!grid || !stream) return;
-
-    // In-phone pill toast,flips from "added a picture" → "X & Y are in this"
-    const host = document.getElementById('inPhoneNotif');
-    if (host) {
-      host.innerHTML = '';
-      const n = document.createElement('div');
-      n.className = 'phone-toast';
-      n.innerHTML = `<div class="phone-toast__dot">${s.init}</div><span class="phone-toast__label">${s.name} clicked a picture</span><div class="phone-toast__thumb" style="background:${s.color}"></div>`;
-      host.appendChild(n);
-
-      // After 1s flip label: "added a picture" → "X & Y are in this"
-      if (s.faces && s.faces.length) {
-        setTimeout(() => {
-          const lbl = n.querySelector('.phone-toast__label');
-          if (!lbl || !n.parentNode) return;
-          // Slide up & out
-          lbl.style.transition = 'opacity .18s ease, transform .18s ease';
-          lbl.style.opacity = '0';
-          lbl.style.transform = 'translateY(-7px)';
-          setTimeout(() => {
-            if (!lbl.parentNode) return;
-            const fs    = s.faces.slice(0,2).map(f => f.name);
-            const who   = fs.length === 2 ? `${fs[0]} & ${fs[1]}` : fs[0];
-            const verb  = fs.length === 2 ? 'are' : 'is';
-            lbl.textContent = `${who} ${verb} in this`;
-            // Reset below, then spring up into place
-            lbl.style.transition = 'none';
-            lbl.style.transform = 'translateY(7px)';
-            void lbl.offsetHeight;
-            lbl.style.transition = 'opacity .22s ease, transform .22s cubic-bezier(.34,1.56,.64,1)';
-            lbl.style.opacity = '1';
-            lbl.style.transform = 'translateY(0)';
-          }, 190);
-        }, 1000);
-      }
-
-      setTimeout(() => n.parentNode && n.parentNode.removeChild(n), 3100);
+    const ev=DEMO_EVENTS[_di], s=ev.senders[_si%ev.senders.length];
+    const grid=document.getElementById('demoGrid'), host=document.getElementById('inPhoneNotif');
+    if (!grid||!host) return;
+    host.innerHTML='';
+    const n=document.createElement('div'); n.className='phone-toast';
+    n.innerHTML=`<div class="phone-toast__dot">${s.init}</div><span class="phone-toast__label">${s.name} clicked a picture</span><div class="phone-toast__thumb" style="background:${s.color}"></div>`;
+    host.appendChild(n);
+    if (s.faces&&s.faces.length) {
+      setTimeout(()=>{
+        const lbl=n.querySelector('.phone-toast__label');
+        if (!lbl||!n.parentNode) return;
+        lbl.style.cssText='transition:opacity .18s ease,transform .18s ease;opacity:0;transform:translateY(-7px)';
+        setTimeout(()=>{
+          if (!lbl.parentNode) return;
+          const who=s.faces[0].name; lbl.textContent=`${who} is in this`;
+          lbl.style.cssText='transition:none;opacity:0;transform:translateY(7px)';
+          void lbl.offsetHeight;
+          lbl.style.cssText='transition:opacity .22s ease,transform .22s cubic-bezier(.34,1.56,.64,1);opacity:1;transform:none';
+        },190);
+      },1000);
     }
-
-    // Desktop sender toast
-    const side = _sd ? 'left' : 'right';
-    const toast = document.createElement('div');
-    toast.className = `sender-toast ${side}`;
-    toast.style.top = TOPS[_si % TOPS.length];
-    toast.innerHTML = `<div class="sender-toast__dot">${s.init}</div><span>${s.name} added a photo</span><div class="sender-toast__thumb" style="background:${s.color}"></div>`;
-    stream.appendChild(toast);
-    setTimeout(() => toast.parentNode && toast.parentNode.removeChild(toast), 3500);
-
-    // Photo cell
-    const cell = document.createElement('div');
-    cell.className = 'photo-cell photo-cell--arriving';
-    cell.style.background = s.color;
-    grid.firstChild ? grid.insertBefore(cell, grid.firstChild) : grid.appendChild(cell);
-    while (grid.children.length > 18) grid.removeChild(grid.lastChild);
-
-    _dc++; _si++; _sd = !_sd;
-    const sub = document.getElementById('demoSubtitle');
-    if (sub) sub.textContent = `${ev.members} people · ${_dc} photos`;
-
-    if (_si >= ev.senders.length * 3) {
-      setTimeout(() => {
-        _di = (_di + 1) % DEMO_EVENTS.length; _dc = 0; _si = 0;
-        const nev = DEMO_EVENTS[_di];
-        const e = (id) => document.getElementById(id);
-        if (e('demoRoomName')) e('demoRoomName').textContent = nev.name;
-        if (e('demoIcon'))     e('demoIcon').textContent     = nev.icon;
-        if (e('demoSubtitle')) e('demoSubtitle').textContent = `${nev.members} people · 0 photos`;
-        if (e('demoGrid'))     e('demoGrid').innerHTML       = '';
-        const h = document.querySelector('.demo-hint span');
-        if (h) h.textContent = `Photos from ${nev.members} phones,syncing live while the event is still happening`;
-      }, 600);
+    setTimeout(()=>n.parentNode&&n.parentNode.removeChild(n),3100);
+    const cell=document.createElement('div');
+    const colors=['c1','c2','c3','c4','c5','c6','c7','c8','c9'];
+    cell.className=`photo-cell photo-cell--arriving ${colors[_dc%colors.length]}`;
+    cell.style.background=s.color;
+    grid.firstChild?grid.insertBefore(cell,grid.firstChild):grid.appendChild(cell);
+    while(grid.children.length>18) grid.removeChild(grid.lastChild);
+    _dc++; _si++;
+    const sub=document.getElementById('demoSubtitle');
+    if(sub) sub.textContent=`${ev.members} people · ${_dc} photos`;
+    if(_si>=ev.senders.length*3) {
+      setTimeout(()=>{
+        _di=(_di+1)%DEMO_EVENTS.length; _dc=0; _si=0;
+        const nev=DEMO_EVENTS[_di];
+        const g=(id)=>document.getElementById(id);
+        if(g('demoRoomName')) g('demoRoomName').textContent=nev.name;
+        if(g('demoIcon'))     g('demoIcon').textContent=nev.icon;
+        if(g('demoSubtitle')) g('demoSubtitle').textContent=`${nev.members} people · 0 photos`;
+        if(g('demoGrid'))     g('demoGrid').innerHTML='';
+      },600);
     }
   }
-  setInterval(_tick, 3000);
+  setInterval(_tick,3000);
 
-  // Mobile card demo tick,slower to let each story beat land
-  let _mob_dc = 0, _mob_di = 0, _mob_si = 0;
-  function _mobTick() {
-    const ev = DEMO_EVENTS[_mob_di];
-    const s  = ev.senders[_mob_si % ev.senders.length];
-    const pill = document.getElementById('mobPill');
-    const card = document.getElementById('mobCard');
-    const face = document.getElementById('mobFace');
-    const ctr  = document.getElementById('mobCounter');
-
-    if (pill) {
-      pill.className = 'mob-pill';
-      void pill.offsetHeight;
-      pill.innerHTML = `<div class="mob-avatar" style="background:${s.color}">${s.init}</div><span>${s.name} added a photo</span>`;
-      pill.className = 'mob-pill in';
-    }
-    if (card) {
-      card.className = 'mob-card';
-      if (face) face.className = 'mob-face-badge';
-      void card.offsetHeight;
-      card.style.backgroundColor = s.color;
-      card.className = 'mob-card in';
-      if (face && s.faces && s.faces.length) {
-        setTimeout(() => {
-          const avs   = s.faces.slice(0,2).map(f => `<div class="mob-face-av" style="background:${f.color}">${f.init}</div>`).join('');
-          const fs    = s.faces.slice(0,2).map(f => f.name);
-          const names = fs.length === 2 ? `${fs[0]} & ${fs[1]}` : fs[0];
-          face.innerHTML = `<div class="mob-face-avatars">${avs}</div><span class="mob-face-label">with ${names}</span>`;
-          face.className = 'mob-face-badge in';
-        }, 950);
+  /* ── Showcase phone reveal ── */
+  const scObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.sc-phone').forEach(p=>p.classList.add('in'));
+        scObs.disconnect();
       }
-    }
-    _mob_dc++;
-    if (ctr) ctr.textContent = `${_mob_dc} photo${_mob_dc > 1 ? 's' : ''} · ${ev.members} people`;
-    _mob_si++;
-    if (_mob_si >= ev.senders.length * 3) {
-      setTimeout(() => {
-        _mob_di = (_mob_di + 1) % DEMO_EVENTS.length;
-        _mob_dc = 0; _mob_si = 0;
-        if (ctr) ctr.textContent = `0 photos · ${DEMO_EVENTS[_mob_di].members} people`;
-      }, 600);
-    }
-  }
-  _mobTick();
-  setInterval(_mobTick, 3000);
+    });
+  }, { threshold: 0.2 });
+  const scEl = document.getElementById('showcasePhones');
+  if (scEl) scObs.observe(scEl);
 
-  // Country picker
+  /* ── Create screen typing animation ── */
+  const csTyped = document.getElementById('csTyped');
+  const csWords = ['Goa Trip', 'Goa Trip 2', 'Goa Trip 20', 'Goa Trip 202', 'Goa Trip 2025'];
+  let csI = 0;
+  setInterval(()=>{ if(csTyped){ csI=(csI+1)%csWords.length; csTyped.textContent=csWords[csI]; } },500);
+
+  /* ── Country picker ── */
   const COUNTRIES = [
-    { flag:'🇮🇳', name:'India',         code:'+91',  digits:10, pattern:/^[6-9]\d{9}$/ },
-    { flag:'🇺🇸', name:'United States', code:'+1',   digits:10 },
-    { flag:'🇬🇧', name:'United Kingdom',code:'+44',  digits:10 },
-    { flag:'🇦🇪', name:'UAE',           code:'+971', digits:9  },
-    { flag:'🇸🇬', name:'Singapore',     code:'+65',  digits:8  },
-    { flag:'🇦🇺', name:'Australia',     code:'+61',  digits:9  },
-    { flag:'🇨🇦', name:'Canada',        code:'+1',   digits:10 },
-    { flag:'🇩🇪', name:'Germany',       code:'+49',  digits:11 },
-    { flag:'🇫🇷', name:'France',        code:'+33',  digits:9  },
-    { flag:'🇮🇹', name:'Italy',         code:'+39',  digits:10 },
-    { flag:'🇪🇸', name:'Spain',         code:'+34',  digits:9  },
-    { flag:'🇳🇱', name:'Netherlands',   code:'+31',  digits:9  },
-    { flag:'🇸🇪', name:'Sweden',        code:'+46',  digits:9  },
-    { flag:'🇨🇭', name:'Switzerland',   code:'+41',  digits:9  },
-    { flag:'🇯🇵', name:'Japan',         code:'+81',  digits:10 },
-    { flag:'🇰🇷', name:'South Korea',   code:'+82',  digits:10 },
-    { flag:'🇳🇿', name:'New Zealand',   code:'+64',  digits:9  },
-    { flag:'🇲🇾', name:'Malaysia',      code:'+60',  digits:9  },
-    { flag:'🇮🇩', name:'Indonesia',     code:'+62',  digits:11 },
-    { flag:'🇵🇭', name:'Philippines',   code:'+63',  digits:10 },
-    { flag:'🇹🇭', name:'Thailand',      code:'+66',  digits:9  },
-    { flag:'🇻🇳', name:'Vietnam',       code:'+84',  digits:9  },
-    { flag:'🇵🇰', name:'Pakistan',      code:'+92',  digits:10 },
-    { flag:'🇧🇩', name:'Bangladesh',    code:'+880', digits:10 },
-    { flag:'🇱🇰', name:'Sri Lanka',     code:'+94',  digits:9  },
-    { flag:'🇳🇵', name:'Nepal',         code:'+977', digits:10 },
-    { flag:'🇧🇷', name:'Brazil',        code:'+55',  digits:11 },
-    { flag:'🇲🇽', name:'Mexico',        code:'+52',  digits:10 },
-    { flag:'🇳🇬', name:'Nigeria',       code:'+234', digits:10 },
-    { flag:'🇿🇦', name:'South Africa',  code:'+27',  digits:9  },
+    {flag:'🇮🇳',name:'India',code:'+91',digits:10,pattern:/^[6-9]\d{9}$/},
+    {flag:'🇺🇸',name:'United States',code:'+1',digits:10},
+    {flag:'🇬🇧',name:'United Kingdom',code:'+44',digits:10},
+    {flag:'🇦🇪',name:'UAE',code:'+971',digits:9},
+    {flag:'🇸🇬',name:'Singapore',code:'+65',digits:8},
+    {flag:'🇦🇺',name:'Australia',code:'+61',digits:9},
+    {flag:'🇨🇦',name:'Canada',code:'+1',digits:10},
+    {flag:'🇩🇪',name:'Germany',code:'+49',digits:11},
+    {flag:'🇫🇷',name:'France',code:'+33',digits:9},
+    {flag:'🇯🇵',name:'Japan',code:'+81',digits:10},
+    {flag:'🇰🇷',name:'South Korea',code:'+82',digits:10},
+    {flag:'🇳🇿',name:'New Zealand',code:'+64',digits:9},
+    {flag:'🇲🇾',name:'Malaysia',code:'+60',digits:9},
+    {flag:'🇵🇰',name:'Pakistan',code:'+92',digits:10},
+    {flag:'🇧🇩',name:'Bangladesh',code:'+880',digits:10},
+    {flag:'🇳🇵',name:'Nepal',code:'+977',digits:10},
+    {flag:'🇧🇷',name:'Brazil',code:'+55',digits:11},
+    {flag:'🇳🇬',name:'Nigeria',code:'+234',digits:10},
+    {flag:'🇿🇦',name:'South Africa',code:'+27',digits:9},
   ];
-  let selected = COUNTRIES[0];
-  const flagBtn       = document.getElementById('flagBtn');
-  const dropdown      = document.getElementById('countryDropdown');
-  const countrySearch = document.getElementById('countrySearch');
-  const countryList   = document.getElementById('countryList');
-  const phoneInput    = document.getElementById('phoneInput');
-  const submitBtn     = document.getElementById('submitBtn');
-  const phoneError    = document.getElementById('phoneError');
-  const formEl        = document.getElementById('waitlistForm');
-  const successBox    = document.getElementById('successBox');
+  let selected=COUNTRIES[0];
+  const flagBtn=document.getElementById('flagBtn'), dropdown=document.getElementById('countryDropdown');
+  const countrySearch=document.getElementById('countrySearch'), countryList=document.getElementById('countryList');
+  const phoneInput=document.getElementById('phoneInput'), submitBtn=document.getElementById('submitBtn');
+  const phoneError=document.getElementById('phoneError'), formEl=document.getElementById('waitlistForm');
+  const successBox=document.getElementById('successBox');
 
-  function renderList(f = '') {
-    const q = f.toLowerCase();
-    const filtered = COUNTRIES.filter(c => c.name.toLowerCase().includes(q) || c.code.includes(q));
-    countryList.innerHTML = filtered.map(c => `
-      <div class="country-item ${c===selected?'active':''}" data-i="${COUNTRIES.indexOf(c)}">
+  function renderList(f='') {
+    const q=f.toLowerCase();
+    countryList.innerHTML=COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)||c.code.includes(q))
+      .map(c=>`<div class="country-item ${c===selected?'active':''}" data-i="${COUNTRIES.indexOf(c)}">
         <span class="country-item__flag">${c.flag}</span>
         <span class="country-item__name">${c.name}</span>
-        <span class="country-item__code">${c.code}</span>
-      </div>`).join('');
+        <span class="country-item__code">${c.code}</span></div>`).join('');
   }
   function selectCountry(c) {
-    selected = c;
-    flagBtn.innerHTML = `${c.flag} ${c.code} <i data-lucide="chevron-down"></i>`;
+    selected=c;
+    flagBtn.innerHTML=`${c.flag} ${c.code} <i data-lucide="chevron-down"></i>`;
     lucide.createIcons();
-    phoneInput.maxLength = c.digits + 2;
-    phoneInput.placeholder = '·'.repeat(c.digits);
-    phoneInput.value = '';
-    phoneError.classList.remove('show');
+    phoneInput.maxLength=c.digits+2; phoneInput.placeholder='·'.repeat(c.digits);
+    phoneInput.value=''; phoneError.classList.remove('show');
     closeDD(); phoneInput.focus();
   }
-  function openDD()  { renderList(); dropdown.classList.add('open'); flagBtn.classList.add('open'); countrySearch.value = ''; countrySearch.focus(); }
+  function openDD()  { renderList(); dropdown.classList.add('open'); flagBtn.classList.add('open'); countrySearch.value=''; countrySearch.focus(); }
   function closeDD() { dropdown.classList.remove('open'); flagBtn.classList.remove('open'); }
 
-  flagBtn.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.contains('open') ? closeDD() : openDD(); });
-  countrySearch.addEventListener('input', () => renderList(countrySearch.value));
-  countryList.addEventListener('click', e => { const it = e.target.closest('.country-item'); if (it) selectCountry(COUNTRIES[+it.dataset.i]); });
-  document.addEventListener('click', e => { if (!dropdown.contains(e.target) && e.target !== flagBtn) closeDD(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDD(); });
+  flagBtn.addEventListener('click',e=>{e.stopPropagation();dropdown.classList.contains('open')?closeDD():openDD();});
+  countrySearch.addEventListener('input',()=>renderList(countrySearch.value));
+  countryList.addEventListener('click',e=>{const it=e.target.closest('.country-item');if(it)selectCountry(COUNTRIES[+it.dataset.i]);});
+  document.addEventListener('click',e=>{if(!dropdown.contains(e.target)&&e.target!==flagBtn)closeDD();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDD();});
+  phoneInput.addEventListener('input',()=>{ phoneInput.value=phoneInput.value.replace(/\D/g,'').slice(0,selected.digits); phoneError.classList.remove('show'); });
 
-  phoneInput.addEventListener('input', () => {
-    phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, selected.digits);
-    phoneError.classList.remove('show');
-  });
-
+  /* ── Form submit ── */
   submitBtn.addEventListener('click', async () => {
-    const num = phoneInput.value.trim();
-    const valid = selected.pattern ? selected.pattern.test(num) : num.length >= 5 && num.length <= selected.digits;
-    if (!valid) {
-      phoneError.textContent = `Please enter a valid ${selected.digits}-digit number.`;
-      phoneError.classList.add('show'); phoneInput.focus(); return;
-    }
+    const num=phoneInput.value.trim();
+    const valid=selected.pattern?selected.pattern.test(num):num.length>=5&&num.length<=selected.digits;
+    if (!valid) { phoneError.textContent=`Please enter a valid ${selected.digits}-digit number.`; phoneError.classList.add('show'); phoneInput.focus(); return; }
     phoneError.classList.remove('show');
-    submitBtn.disabled = true; submitBtn.innerHTML = 'Adding you…';
-
+    submitBtn.disabled=true; submitBtn.innerHTML='Adding you…';
     async function attempt() {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10000);
-      const res = await fetch('/api/waitlist', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: selected.code + num }),
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (!res.ok) throw new Error('server');
-      let data = {};
-      try { data = await res.json(); } catch {}
+      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),10000);
+      const res=await fetch('/api/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:selected.code+num}),signal:ctrl.signal});
+      clearTimeout(t);
+      if(!res.ok) throw new Error('server');
+      let data={}; try{data=await res.json();}catch{}
       return data;
     }
-
     try {
       let data;
-      try {
-        data = await attempt();
-      } catch {
-        await new Promise(r => setTimeout(r, 2000));
-        data = await attempt();
-      }
+      try { data=await attempt(); } catch { await new Promise(r=>setTimeout(r,2000)); data=await attempt(); }
       formEl.classList.add('hide'); successBox.classList.add('show');
-      if (data.message === 'already registered') {
-        document.querySelector('.success-title').textContent = "You're already registered.";
-        document.querySelector('.success-body').textContent  = "We already have your number. We'll text you as soon as you're off the waitlist.";
+      if(data.message==='already registered'){
+        document.querySelector('.success-title').textContent="You're already registered.";
+        document.querySelector('.success-body').textContent="We already have your number. We'll text you as soon as you're off the waitlist.";
       }
-    } catch (err) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = 'Get Early Access <i data-lucide="arrow-right"></i>';
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-      const isNetworkErr = err && (err.name === 'AbortError' || err.name === 'TypeError' || err.message === 'Failed to fetch');
-      phoneError.textContent = isNetworkErr
-        ? 'Bad network,please check your connection and try again.'
-        : 'Something went wrong,please try again.';
+    } catch(err) {
+      submitBtn.disabled=false;
+      submitBtn.innerHTML='Get Early Access <i data-lucide="arrow-right"></i>';
+      if(typeof lucide!=='undefined') lucide.createIcons();
+      const isNet=err&&(err.name==='AbortError'||err.name==='TypeError'||err.message==='Failed to fetch');
+      phoneError.textContent=isNet?'Bad network — please check your connection and try again.':'Something went wrong — please try again.';
       phoneError.classList.add('show');
     }
   });
