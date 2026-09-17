@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.rollout.app",
+      "sha256_cert_fingerprints": [
+        "46:07:14:58:84:E9:51:99:A7:1B:E5:4D:70:4E:D7:76:0B:D3:C2:50:6D:26:B1:58:1D:EF:9D:07:F0:76:AD:EA",
+        "45:95:AD:2C:73:E9:A6:53:4E:2A:92:27:98:0E:05:87:A8:BD:0A:8C:9D:66:83:25:1A:85:09:27:A3:06:7F:68"
+      ]
+    }
+  }
+]
