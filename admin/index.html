@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Rollout Admin</title>
+<script>try { if (localStorage.getItem("rollout_admin_theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch {}</script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Light by default; the Dark toggle sets data-theme="dark" on <html> and is remembered. */
+:root {
+  color-scheme: light;
+  --primary: #111827; --primary-dark: #000000; --primary-light: #F3F4F6; --on-primary: #FFFFFF;
+  --link: #1D4ED8;
+  --bg: #F5F5F5; --surface: #FFFFFF; --surface-2: #FAFAFA; --text: #111827; --sub: #6B7280; --muted: #9CA3AF;
+  --border: #E5E7EB; --border-soft: #F0F0F0;
+  --green: #047857; --green-bg: #ECFDF5; --red: #B91C1C; --red-bg: #FEF2F2;
+  --amber: #B45309; --amber-bg: #FFFBEB; --blue: #1D4ED8; --blue-bg: #EFF6FF; --violet: #6D28D9; --violet-bg: #F5F3FF; --grey-bg: #F3F4F6;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --grid: #EEEEEE;
+  --ok: #16A34A; --bad: #DC2626;
+  --radius: 4px;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --primary: #F3F4F6; --primary-dark: #FFFFFF; --primary-light: #262626; --on-primary: #111111;
+  --link: #93C5FD;
+  --bg: #0A0A0A; --surface: #161616; --surface-2: #1D1D1D; --text: #F3F4F6; --sub: #A3A3A3; --muted: #737373;
+  --border: #2A2A2A; --border-soft: #222222;
+  --green: #34D399; --green-bg: #0B2A20; --red: #F87171; --red-bg: #2E1213;
+  --amber: #FBBF24; --amber-bg: #2B2008; --blue: #93C5FD; --blue-bg: #13213A; --violet: #C4B5FD; --violet-bg: #231B3A; --grey-bg: #262626;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --grid: #262626;
+  --ok: #22C55E; --bad: #EF4444;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text);
+  line-height: 1.5; font-size: 14px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.muted { color: var(--sub); }
+.hidden { display: none !important; }
+.link-btn { background: none; border: none; color: var(--link); font-weight: 600; padding: 0; margin-left: 6px; }
+
+/* gate */
+#gate { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--bg); z-index: 50; }
+.gate-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px 28px; width: 100%; max-width: 400px; }
+.brand { display: flex; align-items: center; gap: 10px; color: inherit; }
+.brand-mark { width: 30px; height: 30px; border-radius: var(--radius); background: var(--primary); color: var(--on-primary); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.brand-name { font-weight: 800; font-size: 17px; }
+.gate-card h1 { margin: 22px 0 4px; font-size: 26px; letter-spacing: -.4px; }
+.gate-card p { color: var(--sub); font-size: 13px; margin-bottom: 18px; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--sub); }
+.input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); outline: none; }
+.input:focus { border-color: var(--text); }
+.err-msg { color: var(--red); font-size: 12.5px; min-height: 18px; margin-top: 4px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.btn:hover { border-color: var(--sub); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.btn.primary:hover { background: var(--primary-dark); }
+.btn.danger { color: var(--red); border-color: var(--red-bg); background: var(--surface); }
+.btn.danger:hover { background: var(--red-bg); border-color: var(--red); }
+.btn.danger-solid { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn.block { width: 100%; justify-content: center; padding: 11px; }
+
+/* shell */
+#app { display: none; }
+.sidebar { position: fixed; inset: 0 auto 0 0; width: 232px; background: var(--surface); border-right: 1px solid var(--border); padding: 18px 12px; display: flex; flex-direction: column; z-index: 20; }
+.sidebar .brand { padding: 0 6px; }
+.side-tag { margin: 6px 6px 18px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.nav a { display: block; padding: 9px 10px; border-radius: var(--radius); color: var(--sub); font-weight: 600; margin-bottom: 2px; }
+.nav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.nav a.on { background: var(--primary); color: var(--on-primary); }
+.nav a.on:hover { background: var(--primary); color: var(--on-primary); }
+.nav .sep { height: 1px; background: var(--border); margin: 12px 6px; }
+.side-foot { margin-top: auto; font-size: 12px; color: var(--muted); padding: 0 6px; }
+.side-foot b { color: var(--text); font-weight: 600; word-break: break-all; }
+.side-foot button { margin-top: 10px; width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; font-weight: 600; }
+.main { margin-left: 232px; min-height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 18px 28px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 10; }
+.topbar h2 { font-size: 19px; letter-spacing: -.2px; }
+.topbar .sub { color: var(--sub); font-size: 12.5px; }
+.topbar .grow { flex: 1; min-width: 0; }
+.menu-btn { display: none; }
+.content { padding: 24px 28px 60px; max-width: 1280px; }
+@media (max-width: 860px) {
+  .sidebar { transform: translateX(-100%); transition: transform .2s; }
+  body.nav-open .sidebar { transform: none; }
+  .main { margin-left: 0; }
+  .menu-btn { display: inline-flex; }
+  .topbar { padding: 14px 16px; }
+  .content { padding: 16px 16px 60px; }
+}
+
+/* cards */
+.stack { display: flex; flex-direction: column; gap: 18px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 18px 0; flex-wrap: wrap; }
+.panel-title { font-weight: 700; font-size: 15px; }
+.panel-sub { color: var(--sub); font-size: 12.5px; }
+.panel-body { padding: 14px 18px 18px; }
+.section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--sub); margin-bottom: 8px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.kpi { padding: 14px 16px; }
+.kpi .label { font-size: 12.5px; color: var(--sub); font-weight: 600; }
+.kpi .val { font-size: 26px; font-weight: 800; letter-spacing: -.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.kpi .note { font-size: 12px; color: var(--muted); }
+
+/* toolbar */
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); }
+.toolbar .input { max-width: 300px; padding: 8px 12px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 6px 11px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--sub); }
+.chip.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+/* tables */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; padding: 10px 18px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+td { padding: 11px 18px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--surface-2); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.who .t { min-width: 0; }
+.who .n { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.who .e { color: var(--sub); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.avatar { width: 32px; height: 32px; border-radius: var(--radius); background: var(--grey-bg); color: var(--sub); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.emoji { width: 32px; height: 32px; border-radius: var(--radius); background: var(--grey-bg); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.pill { display: inline-block; padding: 2px 9px; border-radius: var(--radius); font-size: 11.5px; font-weight: 700; white-space: nowrap; background: var(--grey-bg); color: var(--sub); }
+.pill.green { background: var(--green-bg); color: var(--green); }
+.pill.red { background: var(--red-bg); color: var(--red); }
+.pill.amber { background: var(--amber-bg); color: var(--amber); }
+.pill.blue { background: var(--blue-bg); color: var(--blue); }
+.pill.violet { background: var(--violet-bg); color: var(--violet); }
+.empty, .state { padding: 34px 18px; text-align: center; color: var(--sub); }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--border-soft); font-size: 12.5px; color: var(--sub); flex-wrap: wrap; }
+.pager .btns { display: flex; gap: 6px; }
+
+/* detail */
+.crumbs { font-size: 13px; color: var(--sub); margin-bottom: 14px; }
+.crumbs a { font-weight: 600; }
+.hero { display: flex; gap: 16px; align-items: center; padding: 18px; flex-wrap: wrap; }
+.hero .big-emoji { width: 56px; height: 56px; border-radius: var(--radius); background: var(--grey-bg); display: flex; align-items: center; justify-content: center; font-size: 30px; }
+.hero .avatar { width: 56px; height: 56px; font-size: 18px; }
+.hero h3 { font-size: 21px; letter-spacing: -.3px; }
+.hero .meta { color: var(--sub); font-size: 12.5px; display: flex; gap: 6px 14px; flex-wrap: wrap; margin-top: 2px; }
+.hero .grow { flex: 1; min-width: 200px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--border-soft); border-top: 1px solid var(--border-soft); }
+.fact { background: var(--surface); padding: 12px 18px; }
+.fact .k { font-size: 11.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.fact .v { font-weight: 600; margin-top: 2px; word-break: break-word; }
+.tier-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seg button { border: none; background: var(--surface); padding: 8px 13px; font-weight: 600; font-size: 13px; color: var(--sub); border-right: 1px solid var(--border); }
+.seg button:last-child { border-right: none; }
+.seg button.on { background: var(--primary); color: var(--on-primary); }
+.seg button.cur:not(.on) { color: var(--text); }
+
+/* media */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; padding: 14px 18px 18px; }
+.tile { position: relative; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: var(--grey-bg); cursor: zoom-in; }
+.tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile .badge { position: absolute; left: 6px; bottom: 6px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius); }
+.tile .del { position: absolute; right: 6px; top: 6px; background: rgba(0,0,0,.65); color: #fff; border: none; border-radius: var(--radius); font-size: 11.5px; font-weight: 700; padding: 3px 8px; opacity: 0; transition: opacity .15s; }
+.tile:hover .del, .tile:focus-within .del { opacity: 1; }
+@media (hover: none) { .tile .del { opacity: 1; } }
+
+/* chart */
+.chart-wrap { position: relative; padding: 6px 18px 4px; }
+.chart-wrap svg { display: block; width: 100%; height: 280px; overflow: visible; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--sub); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: var(--radius); display: inline-block; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 11px; font-size: 12.5px; min-width: 140px; z-index: 2; }
+.tip .d { font-weight: 700; margin-bottom: 4px; }
+.tip .r { display: flex; align-items: center; gap: 7px; justify-content: space-between; }
+.tip .r span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--sub); }
+.tip i { width: 10px; height: 3px; border-radius: var(--radius); display: inline-block; }
+.tip b { font-variant-numeric: tabular-nums; }
+
+/* modal, lightbox, toasts */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
+.modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 440px; padding: 22px; border: 1px solid var(--border); }
+.modal h4 { font-size: 17px; margin-bottom: 6px; }
+.modal p { color: var(--sub); font-size: 13.5px; margin-bottom: 14px; }
+.modal .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: flex; align-items: center; justify-content: center; z-index: 70; padding: 16px; }
+.lightbox img, .lightbox video { max-width: 100%; max-height: 86vh; border-radius: var(--radius); }
+.lightbox .bar { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
+.lightbox .cap { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: #ddd; font-size: 12.5px; }
+#toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 80; }
+.toast { background: var(--primary); color: var(--on-primary); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; max-width: 360px; }
+.toast.err { background: var(--red); color: #fff; }
+.picker-list { max-height: 360px; overflow-y: auto; }
+.pick-row { display: flex; align-items: center; gap: 10px; padding: 9px 18px; border-bottom: 1px solid var(--border-soft); }
+.pick-row .grow { flex: 1; min-width: 0; }
+.selected { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 18px; border-top: 1px solid var(--border-soft); min-height: 48px; align-items: center; }
+.sel-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); font-size: 12.5px; font-weight: 600; }
+.sel-chip button { border: none; background: none; color: var(--sub); font-size: 14px; line-height: 1; padding: 0 4px; }
+textarea.input { resize: vertical; min-height: 96px; line-height: 1.45; }
+.count { float: right; font-weight: 400; color: var(--muted); }
+.phone-preview { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); padding: 12px 14px; }
+.phone-preview .app { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+.phone-preview .pt { font-weight: 700; word-break: break-word; }
+.phone-preview .pb { color: var(--sub); white-space: pre-wrap; word-break: break-word; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 4px 0 14px; }
+.reach { font-size: 13px; color: var(--sub); margin: 12px 0; }
+.reach b { color: var(--text); }
+.svc-map { padding: 8px 18px 18px; overflow-x: auto; }
+.svc-hint { display: none; padding: 0 18px; font-size: 12px; color: var(--muted); }
+@media (max-width: 860px) { .svc-hint { display: block; } }
+.svc-map svg { display: block; width: 100%; min-width: 720px; height: auto; }
+.svc-node rect { fill: var(--surface); stroke-width: 1.5; }
+.svc-node text { fill: var(--text); font-size: 13px; font-weight: 700; }
+.svc-node text.sub { fill: var(--sub); font-size: 11px; font-weight: 500; }
+.svc-node { cursor: pointer; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: var(--radius); flex-shrink: 0; }
+.dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); } .dot.na { background: var(--muted); }
+.svc-row { display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px; border-bottom: 1px solid var(--border-soft); }
+.svc-row:last-child { border-bottom: none; }
+.svc-row .dot { margin-top: 6px; }
+.svc-row .grow { flex: 1; min-width: 0; }
+.vitals { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--sub); margin-top: 4px; }
+.vitals b { color: var(--text); font-weight: 600; }
+.legend-row { display: flex; gap: 16px; font-size: 12.5px; color: var(--sub); align-items: center; flex-wrap: wrap; }
+.legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+.term { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55; max-height: 560px; overflow: auto; padding: 10px 0; background: var(--surface-2); }
+.term .ln { display: flex; gap: 12px; padding: 1px 18px; white-space: pre-wrap; word-break: break-word; }
+.term .ln:hover { background: var(--primary-light); }
+.term .ts { color: var(--muted); flex-shrink: 0; }
+.term .lv { flex-shrink: 0; width: 44px; font-weight: 700; color: var(--sub); }
+.term .ln.err .lv, .term .ln.err .msg { color: var(--bad); }
+.term .ln.warn .lv { color: var(--amber); }
+.term .src { flex-shrink: 0; width: 46px; color: var(--sub); }
+.banner { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 13px; }
+.banner.bad { border-color: var(--bad); background: var(--red-bg); }
+.banner.warn { border-color: var(--amber); background: var(--amber-bg); }
+.banner b { display: block; }
+.switch-row { display: flex; align-items: center; gap: 10px; font-weight: 600; margin-bottom: 10px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+@media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+.env-switch { margin: 0 6px 16px; }
+.env-badge { padding: 4px 10px; border-radius: var(--radius); font-size: 11.5px; font-weight: 800; letter-spacing: .06em; white-space: nowrap; }
+.env-badge.stage { background: var(--grey-bg); color: var(--text); border: 1px solid var(--border); }
+.env-badge.local { background: var(--amber-bg); color: var(--amber); }
+.env-badge.prod { background: var(--bad); color: #fff; }
+.prod-bar { background: var(--bad); color: #fff; font-weight: 700; font-size: 12.5px; text-align: center; padding: 6px 12px; }
+body.is-prod .sidebar { border-right: 3px solid var(--bad); }
+.health-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <form class="gate-card" id="loginForm" autocomplete="on">
+    <div class="brand"><div class="brand-mark">R</div><span class="brand-name">Rollout</span></div>
+    <h1 id="gateHeading">Admin</h1>
+    <p>Super admin only. <button class="link-btn" data-theme-toggle type="button">Dark</button></p>
+    <div class="field"><label>Server</label><div class="chips" id="gateServers"></div></div>
+    <div class="field"><label for="email">Email</label><input class="input" id="email" type="email" autocomplete="username" required /></div>
+    <div class="field"><label for="password">Password</label><input class="input" id="password" type="password" autocomplete="current-password" required /></div>
+    <div class="err-msg" id="loginErr"></div>
+    <button class="btn primary block" id="loginBtn" type="submit">Sign in</button>
+  </form>
+</div>
+
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">R</div><span class="brand-name">Rollout</span></div>
+    <div class="side-tag">Super admin</div>
+    <div class="env-switch chips" id="envSwitch"></div>
+    <nav class="nav" id="nav">
+      <a href="#/overview" data-sec="overview">Overview</a>
+      <a href="#/users" data-sec="users">Users</a>
+      <a href="#/rooms" data-sec="rooms">Rooms</a>
+      <a href="#/revenue" data-sec="revenue">Revenue</a>
+      <a href="#/push" data-sec="push">Push notifications</a>
+      <div class="sep"></div>
+      <a href="#/services" data-sec="services">Services</a>
+      <a href="#/logs" data-sec="logs">Logs</a>
+      <a href="#/app" data-sec="app">App version</a>
+    </nav>
+    <div class="side-foot"><div id="health"></div>Signed in as<br><b id="whoami"></b><button id="logoutBtn" type="button">Sign out</button></div>
+  </aside>
+  <div class="main">
+    <div class="prod-bar hidden" id="prodBar">You are looking at PRODUCTION. Deletes, bans and pushes here change real data.</div>
+    <header class="topbar">
+      <button class="btn menu-btn" id="menuBtn" type="button">Menu</button>
+      <div class="grow"><h2 id="pageTitle"></h2><div class="sub" id="pageSub"></div></div>
+      <span class="env-badge stage" id="envBadge"></span>
+      <button class="btn" data-theme-toggle type="button">Dark</button>
+      <button class="btn" id="refreshBtn" type="button">Refresh</button>
+    </header>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+<div id="toasts"></div>
+
+<script>
+// This page lives on the website and talks to whichever backend is picked here. Each backend has its
+// own sign-in and its own data, so the two can never be mixed up.
+const SERVERS = {
+  stage: { label: 'Stage', base: 'https://groupsnap-backend-stage.up.railway.app' },
+  production: { label: 'Production', base: 'https://api.rollouts.in' },
+};
+// Only when the page is opened from this computer, to try it against a local backend.
+if (['localhost', '127.0.0.1'].includes(location.hostname)) SERVERS.local = { label: 'Local', base: 'http://localhost:8077' };
+const SERVER_KEY = 'rollout_admin_server';
+const tokenKey = s => `rollout_admin_token_${s}`;
+const emailKey = s => `rollout_admin_email_${s}`;
+const lastOkKey = s => `rollout_admin_ok_${s}`;
+let SERVER = 'stage';
+let TOKEN = '';
+
+/* ── helpers ── */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => (n === null || n === undefined) ? '—' : Number(n).toLocaleString('en-IN');
+const inr = n => '₹' + Number(n || 0).toLocaleString('en-IN');
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const fmtDT = d => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+const dayLabel = iso => new Date(iso + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+function ago(d) {
+  if (!d) return '—';
+  const s = Math.max(0, (Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  if (s < 86400 * 30) return `${Math.round(s / 86400)}d ago`;
+  return fmtDate(d);
+}
+const initials = n => (n || '?').split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || '?';
+const avatar = u => { const src = u && (u.face_crop_uri || u.avatar_url);
+  return `<div class="avatar">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : esc(initials(u && u.name))}</div>`; };
+const TIER = { normal: ['Free', ''], large: ['Large', 'blue'], extra_large: ['Extra Large', 'violet'], organised: ['Organised (legacy)', 'blue'] };
+// Rooms store an icon name from the app ('suitcase'); older ones an emoji. Names without a
+// match show the room's first letter.
+const ICONS = { suitcase: '🧳', handshake: '🤝', camera: '📸', cake: '🎂', 'birthday-cake': '🎂', heart: '❤️', party: '🎉', 'party-popper': '🎉',
+  music: '🎵', plane: '✈️', airplane: '✈️', beach: '🏖️', 'umbrella-beach': '🏖️', graduation: '🎓', 'graduation-cap': '🎓', trophy: '🏆', ring: '💍',
+  gift: '🎁', star: '⭐', sun: '☀️', mountain: '⛰️', utensils: '🍽️', food: '🍽️', briefcase: '💼', building: '🏢', church: '⛪', tent: '⛺',
+  baby: '👶', dumbbell: '🏋️', football: '⚽', ball: '⚽', book: '📚', home: '🏠', house: '🏠', flower: '🌸', tree: '🌳', car: '🚗', glass: '🥂', drink: '🥂' };
+const icon = (e, name) => /^[\x00-\x7F]*$/.test(e || '') ? (ICONS[(e || '').toLowerCase()] || esc((name || '?').trim().charAt(0).toUpperCase())) : esc(e);
+const tierPill = t => { const [l, c] = TIER[t] || [t, '']; return `<span class="pill ${c}">${esc(l)}</span>`; };
+const statusPill = s => ({ used: '<span class="pill green">Used</span>', unused: '<span class="pill amber">Unused</span>', refunded: '<span class="pill red">Refunded</span>' }[s] || esc(s));
+const product = p => p && p.endsWith('999') ? 'Extra Large · ₹999' : 'Large · ₹499';
+function readStore(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } }
+function writeStore(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} }
+
+// Bumped on every page change. A page's GET that answers after you have moved on is dropped,
+// otherwise a slow page (the API logs take seconds) draws into whichever page is showing now.
+// fetch that gives up after `ms`, so a server that never answers shows as unreachable instead of hanging.
+function fetchT(url, opts = {}, ms = 45000) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctl.signal }).finally(() => clearTimeout(t));
+}
+let routeSeq = 0;
+async function api(path, opts = {}) {
+  const seq = routeSeq, isGet = !opts.method || opts.method === 'GET';
+  const server = SERVER;
+  let res;
+  try {
+    res = await fetchT(SERVERS[server].base + (path.startsWith('/dashboard') ? '' : '/admin/api') + path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}`, ...(opts.headers || {}) },
+    });
+  } catch { throw new Error('unreachable'); }
+  writeStore(lastOkKey(server), String(Date.now()));
+  if (res.status === 401) { signOut(); throw new Error('Signed out'); }
+  if ((isGet && seq !== routeSeq) || server !== SERVER) return new Promise(() => {});
+  let body = null; try { body = await res.json(); } catch {}
+  if (!res.ok) throw new Error((body && body.detail) || `Error ${res.status}`);
+  return body;
+}
+function toast(msg, err = false) {
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), 4500);
+}
+
+/* Confirm dialog. `typeToConfirm` makes the admin type a word before the button unlocks. */
+function confirmDialog({ title, body, confirm = 'Confirm', danger = false, typeToConfirm = '' }) {
+  return new Promise(resolve => {
+    const o = document.createElement('div'); o.className = 'overlay';
+    o.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h4>${esc(title)}</h4><p>${SERVER === 'production' ? '<b style="color:var(--bad)">This is PRODUCTION. </b>' : ''}${body}</p>
+      ${typeToConfirm ? `<div class="field"><label>Type <b>${esc(typeToConfirm)}</b> to confirm</label><input class="input" id="cfIn" autocomplete="off"></div>` : ''}
+      <div class="row"><button class="btn" data-a="no" type="button">Cancel</button>
+      <button class="btn ${danger ? 'danger-solid' : 'primary'}" data-a="yes" type="button" ${typeToConfirm ? 'disabled' : ''}>${esc(confirm)}</button></div></div>`;
+    document.body.appendChild(o);
+    const yes = $('[data-a=yes]', o), inp = $('#cfIn', o);
+    if (inp) { inp.focus(); inp.addEventListener('input', () => { yes.disabled = inp.value.trim() !== typeToConfirm; }); } else yes.focus();
+    const done = v => { o.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') done(false); };
+    document.addEventListener('keydown', onKey);
+    o.addEventListener('click', e => { if (e.target === o || e.target.dataset.a === 'no') done(false); if (e.target.dataset.a === 'yes' && !e.target.disabled) done(true); });
+  });
+}
+
+function pager(data, onPage) {
+  const pages = Math.max(1, Math.ceil(data.total / data.page_size));
+  const from = data.total ? (data.page - 1) * data.page_size + 1 : 0, to = Math.min(data.total, data.page * data.page_size);
+  const id = 'pg' + Math.random().toString(36).slice(2, 8);
+  setTimeout(() => {
+    const el = document.getElementById(id); if (!el) return;
+    el.addEventListener('click', e => { const p = e.target.dataset.p; if (p) onPage(Number(p)); });
+  });
+  return `<div class="pager" id="${id}"><span>${fmt(from)}–${fmt(to)} of ${fmt(data.total)}</span><div class="btns">
+    <button class="btn sm" data-p="1" ${data.page <= 1 ? 'disabled' : ''} type="button">First</button>
+    <button class="btn sm" data-p="${data.page - 1}" ${data.page <= 1 ? 'disabled' : ''} type="button">Previous</button>
+    <span style="align-self:center;padding:0 6px">Page ${data.page} of ${pages}</span>
+    <button class="btn sm" data-p="${data.page + 1}" ${data.page >= pages ? 'disabled' : ''} type="button">Next</button></div></div>`;
+}
+function debounce(fn, ms = 300) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+const state = { users: { page: 1, q: '', banned: false }, rooms: { page: 1, q: '', tier: '' }, rev: { env: 'live', status: 'all', page: 1, date: '' } };
+
+/* ═══════════════ OVERVIEW ═══════════════ */
+async function pageOverview(root) {
+  const d = await api('/overview');
+  const t = d.totals, td = d.today;
+  root.innerHTML = `<div class="stack">
+    <div><div class="section-label">All time</div><div class="kpis">
+      ${kpi('Users', fmt(t.users))}${kpi('Photos', fmt(t.photos))}${kpi('Videos', fmt(t.videos))}
+      ${kpi('Events', fmt(t.events))}${kpi('Paid events', fmt(t.paid_events), 'On Large or Extra Large')}</div></div>
+    <div><div class="section-label">Today (India time)</div><div class="kpis">
+      ${kpi('New users', fmt(td.users))}${kpi('New events', fmt(td.events))}${kpi('Payments', fmt(td.payments), 'Paid events and upgrades')}${kpi('Photos & videos added', fmt(td.photos))}</div></div>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Last 30 days</div><div class="panel-sub">New users, new events and payments per day</div></div>
+      <div class="chips" id="chartView"><button class="chip on" data-v="chart" type="button">Chart</button><button class="chip" data-v="table" type="button">Table</button></div></div>
+      <div class="panel-body" style="padding-bottom:6px"><div class="legend">
+        <span><i style="background:var(--series-1)"></i>New users</span><span><i style="background:var(--series-2)"></i>New events</span><span><i style="background:var(--series-3)"></i>Payments</span></div></div>
+      <div id="chartBox"></div></section></div>`;
+  const box = $('#chartBox');
+  const draw = v => {
+    $$('#chartView .chip').forEach(c => c.classList.toggle('on', c.dataset.v === v));
+    if (v === 'table') {
+      box.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Day</th><th class="num">New users</th><th class="num">New events</th><th class="num">Payments</th></tr></thead><tbody>
+        ${d.daily.slice().reverse().map(r => `<tr><td>${dayLabel(r.date)}</td><td class="num">${fmt(r.users)}</td><td class="num">${fmt(r.events)}</td><td class="num">${fmt(r.payments)}</td></tr>`).join('')}</tbody></table></div>`;
+    } else lineChart(box, d.daily, [['users', 'New users', 'var(--series-1)'], ['events', 'New events', 'var(--series-2)'], ['payments', 'Payments', 'var(--series-3)']]);
+  };
+  $('#chartView').addEventListener('click', e => { if (e.target.dataset.v) draw(e.target.dataset.v); });
+  draw('chart');
+}
+const kpi = (label, val, note = '') => `<div class="card kpi"><div class="label">${label}</div><div class="val">${val}</div>${note ? `<div class="note">${note}</div>` : ''}</div>`;
+
+/* One y-axis (all three are counts per day), 2px lines, crosshair tooltip, direct end labels. */
+function lineChart(box, rows, series) {
+  box.innerHTML = '<div class="chart-wrap"><svg role="img" aria-label="Line chart of the last 30 days"></svg><div class="tip hidden"></div></div>';
+  const wrap = $('.chart-wrap', box), svg = $('svg', box), tip = $('.tip', box);
+  const W = wrap.clientWidth - 36, H = 280, m = { l: 34, r: 92, t: 12, b: 26 };
+  const iw = Math.max(80, W - m.l - m.r), ih = H - m.t - m.b;
+  const max = Math.max(1, ...rows.flatMap(r => series.map(s => r[s[0]])));
+  const step = niceStep(max), top = Math.ceil(max / step) * step;
+  const x = i => m.l + (rows.length < 2 ? iw / 2 : i * iw / (rows.length - 1));
+  const y = v => m.t + ih - (v / top) * ih;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  let g = '';
+  for (let v = 0; v <= top; v += step) g += `<line x1="${m.l}" x2="${m.l + iw}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(v)}</text>`;
+  const every = Math.ceil(rows.length / Math.max(2, Math.floor(iw / 70)));
+  rows.forEach((r, i) => { if (i % every === 0 || i === rows.length - 1) g += `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${dayLabel(r.date)}</text>`; });
+  // End labels, nudged apart so they never overlap.
+  const ends = series.map(s => ({ s, y: y(rows[rows.length - 1][s[0]]) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+  const over = ends[ends.length - 1].y - (m.t + ih);
+  if (over > 0) ends.forEach(e => { e.y -= over; });
+  series.forEach(([k, , c]) => {
+    g += `<path d="${rows.map((r, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(r[k]).toFixed(1)}`).join('')}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  ends.forEach(({ s: [k, l, c], y: ly }) => { g += `<text x="${m.l + iw + 8}" y="${ly + 4}" font-size="11.5" fill="var(--text)"><tspan fill="${c}">●</tspan> ${esc(l)} ${fmt(rows[rows.length - 1][k])}</text>`; });
+  g += `<line class="xh" y1="${m.t}" y2="${m.t + ih}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>`;
+  g += series.map(([, , c], j) => `<circle class="dot${j}" r="4.5" fill="${c}" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`).join('');
+  g += `<rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" class="hit"/>`;
+  svg.innerHTML = g;
+  const hit = $('.hit', svg), xh = $('.xh', svg);
+  const move = ev => {
+    const pt = svg.getBoundingClientRect(), sx = (ev.clientX - pt.left) * (W / pt.width);
+    const i = Math.max(0, Math.min(rows.length - 1, Math.round((sx - m.l) / (iw / Math.max(1, rows.length - 1)))));
+    const r = rows[i];
+    xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.setAttribute('visibility', 'visible');
+    series.forEach(([k], j) => { const c = $(`.dot${j}`, svg); c.setAttribute('cx', x(i)); c.setAttribute('cy', y(r[k])); c.setAttribute('visibility', 'visible'); });
+    tip.innerHTML = `<div class="d">${dayLabel(r.date)}</div>${series.map(([k, l, c]) => `<div class="r"><span><i style="background:${c}"></i>${esc(l)}</span><b>${fmt(r[k])}</b></div>`).join('')}`;
+    tip.classList.remove('hidden');
+    const px = x(i) * (pt.width / W) + 18, tw = tip.offsetWidth;
+    tip.style.left = (px + tw + 16 > wrap.clientWidth ? px - tw - 16 : px + 12) + 'px'; tip.style.top = '12px';
+  };
+  const leave = () => { tip.classList.add('hidden'); xh.setAttribute('visibility', 'hidden'); series.forEach((_, j) => $(`.dot${j}`, svg).setAttribute('visibility', 'hidden')); };
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move); hit.addEventListener('pointerleave', leave);
+}
+function niceStep(max) { const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))); const n = raw / p; return Math.max(1, (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p); }
+
+/* ═══════════════ USERS ═══════════════ */
+async function pageUsers(root) {
+  const st = state.users;
+  root.innerHTML = `<section class="card"><div class="toolbar"><input class="input" id="q" placeholder="Search name, email or user id" value="${esc(st.q)}">
+    <div class="chips" id="ufilt"><button class="chip ${st.banned ? '' : 'on'}" data-v="" type="button">All</button><button class="chip ${st.banned ? 'on' : ''}" data-v="1" type="button">Banned</button></div><span class="muted" id="cnt"></span></div><div id="list"><div class="state">Loading…</div></div></section>`;
+  $('#ufilt').addEventListener('click', e => { if (e.target.dataset.v === undefined) return; st.banned = !!e.target.dataset.v; st.page = 1;
+    $$('#ufilt .chip').forEach(c => c.classList.toggle('on', c === e.target)); load(); });
+  const load = async () => {
+    const d = await api(`/users?page=${st.page}&q=${encodeURIComponent(st.q)}${st.banned ? '&banned=true' : ''}`);
+    $('#cnt').textContent = `${fmt(d.total)} users · newest first`;
+    $('#list').innerHTML = d.items.length ? `<div class="table-wrap"><table><thead><tr><th>User</th><th>Sign-in</th><th class="num">Events joined</th><th class="num">Created</th><th>Joined</th><th>Last active</th></tr></thead><tbody>
+      ${d.items.map(u => `<tr class="click" data-id="${u.id}"><td><div class="who">${avatar(u)}<div class="t"><div class="n">${esc(u.name || 'User')}</div><div class="e">${esc(u.email || '')}</div></div></div></td>
+        <td>${u.is_anonymous ? '<span class="pill">Guest</span>' : `<span class="pill blue">${esc(u.auth_provider || 'account')}</span>`}${u.banned_at ? ' <span class="pill red">Banned</span>' : ''}</td>
+        <td class="num">${fmt(u.rooms_joined)}</td><td class="num">${fmt(u.rooms_created)}</td><td>${fmtDate(u.created_at)}</td><td>${ago(u.last_active_at)}</td></tr>`).join('')}
+      </tbody></table></div>${pager(d, p => { st.page = p; load(); })}` : '<div class="empty">No users match.</div>';
+    $$('#list tr.click').forEach(tr => tr.addEventListener('click', () => location.hash = '#/users/' + tr.dataset.id));
+  };
+  $('#q').addEventListener('input', debounce(e => { st.q = e.target.value; st.page = 1; load(); }));
+  await load();
+}
+
+async function pageUser(root, id) {
+  const d = await api('/users/' + id);
+  const u = d.user;
+  setTitle(u.name || 'User', u.email || 'No email');
+  root.innerHTML = `<div class="crumbs"><a href="#/users">Users</a> / ${esc(u.name || 'User')}</div><div class="stack">
+    ${u.banned_at ? `<div class="banner bad"><div><b>Banned ${fmtDT(u.banned_at)}</b>${u.banned_reason ? 'Reason: ' + esc(u.banned_reason) + '. ' : ''}They can't use the app or sign in on any device. Their rooms and photos are still there for everyone else.</div></div>` : ''}
+    <section class="card"><div class="hero">${avatar(u)}<div class="grow"><h3>${esc(u.name || 'User')} ${u.banned_at ? '<span class="pill red">Banned</span>' : ''}</h3>
+      <div class="meta"><span>${esc(u.email || 'No email')}</span><span>${u.is_anonymous ? 'Guest' : esc(u.auth_provider || '')}</span><span>Joined ${fmtDT(u.created_at)}</span><span>Active ${ago(u.last_active_at)}</span></div></div>
+      <div class="actions">${u.banned_at ? '<button class="btn" id="uUnban" type="button">Unban</button>' : '<button class="btn danger" id="uBan" type="button">Ban from app</button>'}
+        <button class="btn danger" id="uDelete" type="button">Delete account</button></div></div>
+      <div class="facts"><div class="fact"><div class="k">User id</div><div class="v mono">${esc(u.id)}</div></div>
+      <div class="fact"><div class="k">Events</div><div class="v">${fmt(d.rooms.length)}</div></div>
+      <div class="fact"><div class="k">Organiser of</div><div class="v">${fmt(d.rooms.filter(r => r.is_creator).length)}</div></div>
+      <div class="fact"><div class="k">Payments</div><div class="v">${fmt(d.payments.length)} · ${inr(d.payments.filter(p => p.status !== 'refunded').reduce((a, p) => a + p.amount_inr, 0))}</div></div></div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Events</div><div class="panel-sub">Every room they are in. Open one to manage it.</div></div></div>
+      <div class="panel-body" style="padding:8px 0 0">${d.rooms.length ? `<div class="table-wrap"><table><thead><tr><th>Event</th><th>Role</th><th>Tier</th><th class="num">Photos</th><th>Joined</th></tr></thead><tbody>
+      ${d.rooms.map(r => `<tr class="click" data-id="${r.id}"><td><div class="who"><div class="emoji">${icon(r.emoji, r.name)}</div><div class="t"><div class="n">${esc(r.name)}</div></div></div></td>
+        <td>${r.is_creator ? '<span class="pill violet">Organiser</span>' : 'Guest'} ${r.banned ? '<span class="pill red">Blocked</span>' : ''}</td>
+        <td>${tierPill(r.event_type)} ${r.status === 'awaiting_payment' ? '<span class="pill amber">Awaiting payment</span>' : ''}</td><td class="num">${fmt(r.photo_count)}</td><td>${fmtDate(r.joined_at)}</td></tr>`).join('')}
+      </tbody></table></div>` : '<div class="empty">Not in any event.</div>'}</div></section>
+    ${d.payments.length ? `<section class="card"><div class="panel-head"><div class="panel-title">Payments</div></div><div class="panel-body" style="padding:8px 0 0">${paymentsTable(d.payments.map(p => ({ ...p, user: null })), { hideUser: true })}</div></section>` : ''}
+  </div>`;
+  $$('tr.click[data-id]', root).forEach(tr => tr.addEventListener('click', () => location.hash = '#/rooms/' + tr.dataset.id));
+
+  const who = esc(u.name || u.email || 'this user');
+  $('#uBan')?.addEventListener('click', async () => {
+    const o = document.createElement('div'); o.className = 'overlay';
+    o.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h4>Ban ${who} from the app?</h4>
+      <p>They get a push saying their account is suspended, are signed out on every device within a minute, and can't sign back in. Their rooms and photos stay for everyone else. You can unban them any time.</p>
+      <div class="field"><label for="banWhy">Reason (sent to them in the push)</label><input class="input" id="banWhy" maxlength="300" placeholder="e.g. spam, abusive photos"></div>
+      <div class="row"><button class="btn" data-a="no" type="button">Cancel</button><button class="btn danger-solid" data-a="yes" type="button">Ban</button></div></div>`;
+    document.body.appendChild(o); $('#banWhy', o).focus();
+    o.addEventListener('click', async e => {
+      if (e.target === o || e.target.dataset.a === 'no') { o.remove(); return; }
+      if (e.target.dataset.a !== 'yes') return;
+      e.target.disabled = true;
+      try { const r = await api(`/users/${id}/ban`, { method: 'POST', body: JSON.stringify({ reason: $('#banWhy', o).value }) });
+        o.remove(); toast(`Banned and signed out${r.notified ? ', and told by push' : ' (no push: notifications off on their phone)'}.`); route(); }
+      catch (err) { e.target.disabled = false; toast(err.message, true); }
+    });
+  });
+  $('#uUnban')?.addEventListener('click', async () => {
+    if (!await confirmDialog({ title: `Unban ${who}?`, confirm: 'Unban', body: 'They can sign in and use the app again. Room blocks set separately stay as they are.' })) return;
+    try { await api(`/users/${id}/unban`, { method: 'POST' }); toast('Unbanned.'); route(); } catch (e) { toast(e.message, true); }
+  });
+  $('#uDelete').addEventListener('click', async () => {
+    if (!await confirmDialog({ title: `Delete ${who}'s account?`, danger: true, confirm: 'Delete account', typeToConfirm: 'DELETE',
+      body: 'They get a push saying Rollout deleted their account and are signed out within a minute. Removes their account and selfie for good, the same as deleting it from the app. Rooms and photos they shared stay for the other members, without their name. They could sign up again unless banned first.' })) return;
+    try { const r = await api('/users/' + id, { method: 'DELETE' }); toast(`Account deleted${r.notified ? ', and told by push' : ' (no push: notifications off on their phone)'}.`); location.hash = '#/users'; } catch (e) { toast(e.message, true); }
+  });
+}
+
+/* ═══════════════ ROOMS ═══════════════ */
+async function pageRooms(root) {
+  const st = state.rooms;
+  const tiers = [['', 'All'], ['normal', 'Free'], ['large', 'Large'], ['extra_large', 'Extra Large'], ['paid', 'All paid'], ['awaiting_payment', 'Awaiting payment']];
+  root.innerHTML = `<section class="card"><div class="toolbar"><input class="input" id="q" placeholder="Search event, organiser, invite code or id" value="${esc(st.q)}">
+    <div class="chips" id="tiers">${tiers.map(([v, l]) => `<button class="chip ${st.tier === v ? 'on' : ''}" data-v="${v}" type="button">${l}</button>`).join('')}</div><span class="muted" id="cnt"></span></div>
+    <div id="list"><div class="state">Loading…</div></div></section>`;
+  const load = async () => {
+    const d = await api(`/rooms?page=${st.page}&q=${encodeURIComponent(st.q)}&tier=${st.tier}`);
+    $('#cnt').textContent = `${fmt(d.total)} events · newest first`;
+    $('#list').innerHTML = d.items.length ? `<div class="table-wrap"><table><thead><tr><th>Event</th><th>Organiser</th><th>Tier</th><th class="num">People</th><th class="num">Photos</th><th>Created</th><th>Expires</th></tr></thead><tbody>
+      ${d.items.map(r => `<tr class="click" data-id="${r.id}"><td><div class="who"><div class="emoji">${icon(r.emoji, r.name)}</div><div class="t"><div class="n">${esc(r.name)}</div></div></div></td>
+        <td><div class="who"><div class="t"><div class="n">${esc(r.creator?.name || '—')}</div><div class="e">${esc(r.creator?.email || '')}</div></div></div></td>
+        <td>${tierPill(r.event_type)} ${r.status === 'awaiting_payment' ? '<span class="pill amber">Awaiting payment</span>' : ''}${r.pending_upgrade_to ? '<span class="pill amber">Upgrade pending</span>' : ''}${r.is_admin_free ? '<span class="pill green">Comped</span>' : ''}</td>
+        <td class="num">${fmt(r.member_count)}</td><td class="num">${fmt(r.photo_count)}</td><td>${fmtDate(r.created_at)}</td><td>${fmtDate(r.expires_at)}</td></tr>`).join('')}
+      </tbody></table></div>${pager(d, p => { st.page = p; load(); })}` : '<div class="empty">No events match.</div>';
+    $$('#list tr.click').forEach(tr => tr.addEventListener('click', () => location.hash = '#/rooms/' + tr.dataset.id));
+  };
+  $('#q').addEventListener('input', debounce(e => { st.q = e.target.value; st.page = 1; load(); }));
+  $('#tiers').addEventListener('click', e => { if (e.target.dataset.v === undefined) return; st.tier = e.target.dataset.v; st.page = 1;
+    $$('#tiers .chip').forEach(c => c.classList.toggle('on', c === e.target)); load(); });
+  await load();
+}
+
+async function pageRoom(root, id) {
+  const d = await api('/rooms/' + id);
+  const r = d.room, c = d.counts;
+  setTitle(r.name, `${r.tier_label} event`);
+  let pick = r.event_type === 'organised' ? 'large' : r.event_type;
+  root.innerHTML = `<div class="crumbs"><a href="#/rooms">Rooms</a> / ${esc(r.name)}</div><div class="stack">
+    <section class="card"><div class="hero"><div class="big-emoji">${icon(r.emoji, r.name)}</div><div class="grow"><h3>${esc(r.name)}</h3>
+      <div class="meta"><span>${tierPill(r.event_type)}</span>${r.status === 'awaiting_payment' ? '<span class="pill amber">Awaiting payment</span>' : ''}${r.is_archived ? '<span class="pill red">Archived (read-only)</span>' : '<span class="pill green">Active</span>'}
+      ${r.is_admin_free ? '<span class="pill green">Comped</span>' : ''}<span>Created ${fmtDT(r.created_at)}</span></div></div>
+      <div class="actions"><button class="btn" id="pushRoom" type="button">Send push</button><button class="btn danger" id="delRoom" type="button">Delete event</button></div></div>
+      <div class="facts">
+        <div class="fact"><div class="k">Organiser</div><div class="v">${d.creator ? `<a href="#/users/${d.creator.id}">${esc(d.creator.name || 'User')}</a><div class="muted" style="font-weight:400;font-size:12px">${esc(d.creator.email || '')}</div>` : '—'}</div></div>
+        <div class="fact"><div class="k">Photos</div><div class="v">${fmt(c.photos)} / ${fmt(r.photo_limit)}</div></div>
+        <div class="fact"><div class="k">Videos</div><div class="v">${fmt(c.videos)}</div></div>
+        <div class="fact"><div class="k">People</div><div class="v">${fmt(c.members)}${r.member_limit ? ` / ${r.member_limit}` : ''}${c.blocked ? ` · ${c.blocked} blocked` : ''}</div></div>
+        <div class="fact"><div class="k">Expires</div><div class="v">${fmtDT(r.expires_at)}</div></div>
+        <div class="fact"><div class="k">Room id</div><div class="v mono">${esc(r.id)}</div></div>
+      </div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Tier</div><div class="panel-sub">Moves the event without a payment. Everyone in it gets a notification.${r.pending_upgrade_to ? ' The organiser’s pending upgrade is cancelled.' : ''}</div></div></div>
+      <div class="panel-body"><div class="tier-row"><div class="seg" id="tierSeg">${[['normal', 'Free'], ['large', 'Large'], ['extra_large', 'Extra Large']].map(([v, l]) =>
+        `<button type="button" data-v="${v}" class="${v === pick ? 'on' : ''} ${v === r.event_type ? 'cur' : ''}">${l}${v === r.event_type ? ' (current)' : ''}</button>`).join('')}</div>
+        <button class="btn primary" id="tierBtn" type="button" disabled>Move event</button></div></div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Participants</div><div class="panel-sub">Blocking removes them from the event and stops them rejoining with the link. Their photos stay.</div></div></div>
+      <div class="panel-body" style="padding:8px 0 0"><div class="table-wrap"><table><thead><tr><th>Person</th><th>Role</th><th class="num">Uploads</th><th>Joined</th><th></th></tr></thead><tbody>
+      ${d.members.map(m => `<tr><td><div class="who">${avatar(m)}<div class="t"><div class="n"><a href="#/users/${m.id}">${esc(m.name || 'User')}</a></div><div class="e">${esc(m.email || '')}</div></div></div></td>
+        <td>${m.is_creator ? '<span class="pill violet">Organiser</span>' : 'Guest'} ${m.banned ? '<span class="pill red">Blocked</span>' : ''}</td>
+        <td class="num">${fmt(m.uploads)}</td><td>${fmtDate(m.joined_at)}</td>
+        <td class="num">${m.is_creator ? '' : m.banned ? `<button class="btn sm" data-unblock="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Unblock</button>` : `<button class="btn sm danger" data-block="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Block</button>`}</td></tr>`).join('')}
+      </tbody></table></div></div></section>
+    ${d.payments.length ? `<section class="card"><div class="panel-head"><div class="panel-title">Payments for this event</div></div><div class="panel-body" style="padding:8px 0 0">${paymentsTable(d.payments, { hideRoom: true })}</div></section>` : ''}
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Media</div><div class="panel-sub">Newest first. Tap to open; delete removes the file for everyone.</div></div>
+      <div class="chips" id="mediaKind"><button class="chip on" data-v="photo" type="button">Photos (${fmt(c.photos)})</button><button class="chip" data-v="video" type="button">Videos (${fmt(c.videos)})</button></div></div>
+      <div id="media"><div class="state">Loading…</div></div></section>
+  </div>`;
+
+  // tier
+  const seg = $('#tierSeg'), tierBtn = $('#tierBtn');
+  seg.addEventListener('click', e => { const v = e.target.closest('button')?.dataset.v; if (!v) return; pick = v;
+    $$('button', seg).forEach(b => b.classList.toggle('on', b.dataset.v === v)); tierBtn.disabled = v === r.event_type; });
+  tierBtn.addEventListener('click', async () => {
+    const label = { normal: 'Free', large: 'Large', extra_large: 'Extra Large' }[pick];
+    const down = pick === 'normal';
+    const ok = await confirmDialog({ title: `Move to ${label}?`, confirm: `Move to ${label}`,
+      body: `${esc(r.name)} goes from <b>${esc(r.tier_label)}</b> to <b>${label}</b>. ${fmt(c.members)} people will get a notification.` +
+        (down ? ' Free events are capped at 30 people and 1,000 photos, and it will expire 30 days after it was created (at least a week from now).' : '') +
+        ' No payment is taken or refunded.' });
+    if (!ok) return;
+    tierBtn.disabled = true;
+    try { const res = await api(`/rooms/${id}/tier`, { method: 'POST', body: JSON.stringify({ event_type: pick }) });
+      toast(`Moved to ${label}. Notified ${res.notified} ${res.notified === 1 ? 'person' : 'people'}.`); route(); }
+    catch (e) { toast(e.message, true); tierBtn.disabled = false; }
+  });
+
+  $('#pushRoom').addEventListener('click', () => { pushTo({ id: r.id, kind: 'rooms', label: r.name }); location.hash = '#/push'; });
+
+  // delete room
+  $('#delRoom').addEventListener('click', async () => {
+    const ok = await confirmDialog({ title: 'Delete this event?', danger: true, confirm: 'Delete forever', typeToConfirm: 'DELETE',
+      body: `This deletes <b>${esc(r.name)}</b> with its ${fmt(c.photos)} photos and ${fmt(c.videos)} videos, for everyone. It can't be undone. Everyone in it is notified.` });
+    if (!ok) return;
+    toast('Deleting… big events can take a minute.');
+    try { const res = await api('/rooms/' + id, { method: 'DELETE' }); toast(`Deleted. ${fmt(res.photos_deleted)} files removed, ${res.notified} notified.`); location.hash = '#/rooms'; }
+    catch (e) { toast(e.message, true); }
+  });
+
+  // block / unblock
+  root.addEventListener('click', async e => {
+    const b = e.target.closest('[data-block],[data-unblock]'); if (!b) return;
+    const block = !!b.dataset.block, uid = b.dataset.block || b.dataset.unblock;
+    const ok = await confirmDialog({ title: `${block ? 'Block' : 'Unblock'} ${b.dataset.name}?`, danger: block, confirm: block ? 'Block' : 'Unblock',
+      body: block ? 'They lose access to this event and can’t rejoin with the link. Photos they added stay.' : 'They can rejoin this event with the link.' });
+    if (!ok) return;
+    try { await api(`/rooms/${id}/members/${uid}/${block ? 'block' : 'unblock'}`, { method: 'POST' }); toast(block ? 'Blocked.' : 'Unblocked.'); route(); }
+    catch (err) { toast(err.message, true); }
+  });
+
+  // media
+  let kind = 'photo', page = 1;
+  const loadMedia = async () => {
+    const box = $('#media'); if (!box) return;
+    box.innerHTML = '<div class="state">Loading…</div>';
+    const m = await api(`/rooms/${id}/media?kind=${kind}&page=${page}`);
+    if (!m.items.length) { box.innerHTML = `<div class="empty">No ${kind}s.</div>`; return; }
+    box.innerHTML = `<div class="media-grid">${m.items.map(p => `<div class="tile" data-id="${p.id}" tabindex="0">
+      ${p.is_video ? `<video src="${esc(p.video_lq_uri || p.uri)}#t=0.5" preload="metadata" muted playsinline></video><span class="badge">▶ ${p.video_duration ? Math.round(p.video_duration) + 's' : 'video'}</span>`
+        : `<img src="${esc(p.thumb_uri || p.uri)}" alt="" loading="lazy">`}
+      <button class="del" data-del="${p.id}" type="button">Delete</button></div>`).join('')}</div>${pager(m, p => { page = p; loadMedia(); })}`;
+    const byId = Object.fromEntries(m.items.map(p => [p.id, p]));
+    $$('.tile', box).forEach(t => t.addEventListener('click', async ev => {
+      const p = byId[t.dataset.id];
+      if (ev.target.dataset.del) {
+        ev.stopPropagation();
+        const ok = await confirmDialog({ title: `Delete this ${p.is_video ? 'video' : 'photo'}?`, danger: true, confirm: 'Delete',
+          body: `Uploaded by ${esc(p.uploader?.name || 'someone')} on ${fmtDT(p.created_at)}. It is removed for everyone and can't be recovered.` });
+        if (!ok) return;
+        try { const res = await api('/photos/' + p.id, { method: 'DELETE' }); toast(res.file_errors ? 'Deleted, but a file could not be removed from storage (see server logs).' : 'Deleted.', !!res.file_errors); t.remove(); }
+        catch (err) { toast(err.message, true); }
+        return;
+      }
+      lightbox(p);
+    }));
+  };
+  $('#mediaKind').addEventListener('click', e => { if (!e.target.dataset.v) return; kind = e.target.dataset.v; page = 1;
+    $$('#mediaKind .chip').forEach(ch => ch.classList.toggle('on', ch === e.target)); loadMedia(); });
+  loadMedia();
+}
+
+function lightbox(p) {
+  const o = document.createElement('div'); o.className = 'lightbox';
+  o.innerHTML = `${p.is_video ? `<video src="${esc(p.uri)}" controls autoplay playsinline></video>` : `<img src="${esc(p.uri)}" alt="">`}
+    <div class="bar"><a class="btn sm" href="${esc(p.uri)}" target="_blank" rel="noopener">Open original</a><button class="btn sm" type="button" data-x>Close</button></div>
+    <div class="cap">${esc(p.uploader?.name || 'Unknown')} · ${fmtDT(p.created_at)}</div>`;
+  document.body.appendChild(o);
+  const close = () => { o.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  o.addEventListener('click', e => { if (e.target === o || e.target.dataset.x !== undefined) close(); });
+}
+
+/* ═══════════════ REVENUE ═══════════════ */
+function paymentsTable(items, { hideUser = false, hideRoom = false } = {}) {
+  if (!items.length) return '<div class="empty">No payments.</div>';
+  return `<div class="table-wrap"><table><thead><tr>${hideUser ? '' : '<th>Paid by</th>'}<th>When</th><th>Product</th><th class="num">Amount</th><th>Status</th>${hideRoom ? '' : '<th>Event</th>'}</tr></thead><tbody>
+    ${items.map(p => `<tr>${hideUser ? '' : `<td>${p.user ? `<div class="who"><div class="t"><div class="n"><a href="#/users/${p.user.id}">${esc(p.user.name || 'User')}</a></div><div class="e">${esc(p.user.email || '')}</div></div></div>` : '<span class="muted">Deleted user</span>'}</td>`}
+      <td>${fmtDT(p.created_at)}${p.env === 'sandbox' ? ' <span class="pill">Sandbox</span>' : ''}</td><td>${product(p.product_id)}</td><td class="num">${inr(p.amount_inr)}</td>
+      <td>${statusPill(p.status)}${p.status === 'used' && p.consumed_at ? `<div class="muted" style="font-size:11.5px">${fmtDate(p.consumed_at)}</div>` : ''}${p.status === 'refunded' ? `<div class="muted" style="font-size:11.5px">${fmtDate(p.refunded_at)}</div>` : ''}</td>
+      ${hideRoom ? '' : `<td>${p.room ? `<a href="#/rooms/${p.room.id}">${esc(p.room.name)}</a>` : p.room_id ? '<span class="muted">Deleted event</span>' : '<span class="muted">Not used yet</span>'}</td>`}</tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+async function pageRevenue(root) {
+  const st = state.rev;
+  root.innerHTML = '<div class="state">Loading…</div>';
+  const d = await api(`/revenue?env=${st.env}`);
+  const t = d.totals;
+  const envs = [['live', 'Live'], ['sandbox', 'Sandbox'], ['all', 'All']];
+  root.innerHTML = `<div class="stack">
+    <div class="chips" id="envChips">${envs.map(([v, l]) => `<button class="chip ${st.env === v ? 'on' : ''}" data-v="${v}" type="button">${l}</button>`).join('')}
+      <span class="muted" style="align-self:center;font-size:12.5px;margin-left:6px">${st.env === 'sandbox' ? 'Store test purchases. No real money moved.' : st.env === 'live' ? 'Real purchases. Sandbox test buys are left out.' : 'Live and sandbox together.'}${d.env_lookup ? '' : ' RevenueCat key not set here, so sandbox buys can’t be told apart.'}</span></div>
+    <div class="kpis">
+      ${kpi('Collected', inr(t.collected_inr), 'List price, before store fees')}${kpi('Paid events & upgrades', fmt(t.payments))}
+      ${kpi('Today', inr(d.today.collected_inr), `${fmt(d.today.payments)} payments`)}
+      ${kpi('Unused', fmt(t.unused), 'Paid, not spent on an event yet')}${kpi('Refunded', fmt(t.refunded), inr(t.refunded_inr))}</div>
+    <div class="two-col">
+      <section class="card"><div class="panel-head"><div><div class="panel-title">Day by day</div><div class="panel-sub">India time. Pick a day to see its payments.</div></div></div>
+        <div class="panel-body" style="padding:8px 0 0">${d.daily.length ? `<div class="table-wrap" style="max-height:360px;overflow-y:auto"><table><thead><tr><th>Day</th><th class="num">Payments</th><th class="num">Collected</th><th class="num">Refunds</th></tr></thead><tbody>
+        ${d.daily.map(r => `<tr class="click ${st.date === r.date ? 'sel' : ''}" data-date="${r.date}"><td>${dayLabel(r.date)} ${r.date.slice(0, 4)}${st.date === r.date ? ' <span class="pill violet">Showing</span>' : ''}</td><td class="num">${fmt(r.payments)}</td><td class="num">${inr(r.amount_inr)}</td><td class="num">${fmt(r.refunds)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="empty">No payments yet.</div>'}</div></section>
+      <section class="card"><div class="panel-head"><div><div class="panel-title">By product</div><div class="panel-sub">${fmt(d.paid_tier_rooms)} events on a paid tier, ${fmt(d.paid_tier_rooms_without_payment)} of them with no payment (set by admin, comped or legacy).</div></div></div>
+        <div class="panel-body" style="padding:8px 0 0">${d.by_product.length ? `<table><thead><tr><th>Product</th><th class="num">Sold</th><th class="num">Collected</th></tr></thead><tbody>
+        ${d.by_product.map(p => `<tr><td>${esc(p.label)} · ${inr(p.price_inr)}</td><td class="num">${fmt(p.count)}</td><td class="num">${inr(p.amount_inr)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Nothing sold yet.</div>'}</div></section>
+    </div>
+    <section class="card"><div class="toolbar"><div class="panel-title" style="margin-right:6px">Payments</div>
+      <div class="chips" id="stChips">${[['all', 'All'], ['used', 'Used'], ['unused', 'Unused'], ['refunded', 'Refunded']].map(([v, l]) => `<button class="chip ${st.status === v ? 'on' : ''}" data-v="${v}" type="button">${l}</button>`).join('')}</div>
+      ${st.date ? `<button class="btn sm" id="clearDate" type="button">${dayLabel(st.date)} ✕</button>` : ''}</div>
+      <div id="pays"><div class="state">Loading…</div></div></section></div>`;
+  const loadPays = async () => {
+    const p = await api(`/payments?page=${st.page}&status=${st.status}&env=${st.env}&date=${st.date}`);
+    $('#pays').innerHTML = paymentsTable(p.items) + (p.total ? pager(p, n => { st.page = n; loadPays(); }) : '');
+  };
+  $('#envChips').addEventListener('click', e => { if (!e.target.dataset.v) return; st.env = e.target.dataset.v; st.page = 1; pageRevenue(root); });
+  $('#stChips').addEventListener('click', e => { if (!e.target.dataset.v) return; st.status = e.target.dataset.v; st.page = 1;
+    $$('#stChips .chip').forEach(c => c.classList.toggle('on', c === e.target)); loadPays(); });
+  $$('tr[data-date]', root).forEach(tr => tr.addEventListener('click', () => { st.date = st.date === tr.dataset.date ? '' : tr.dataset.date; st.page = 1; pageRevenue(root); }));
+  $('#clearDate')?.addEventListener('click', () => { st.date = ''; st.page = 1; pageRevenue(root); });
+  await loadPays();
+}
+
+
+/* ═══════════════ PUSH ═══════════════ */
+const push = { kind: 'rooms', q: '', selected: [], title: '', body: '', openRoom: true };
+function pushTo(item) { if (!push.selected.some(x => x.id === item.id)) push.selected.push(item); }
+
+async function pagePush(root) {
+  root.innerHTML = `<div class="two-col">
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Who gets it</div><div class="panel-sub">Everyone in a room (except blocked people), or particular people.</div></div></div>
+      <div class="toolbar"><div class="chips" id="pkKind"><button class="chip ${push.kind === 'rooms' ? 'on' : ''}" data-v="rooms" type="button">Rooms</button><button class="chip ${push.kind === 'users' ? 'on' : ''}" data-v="users" type="button">People</button></div>
+        <input class="input" id="pkQ" placeholder="Search" value="${esc(push.q)}"></div>
+      <div class="picker-list" id="pkList"><div class="state">Loading…</div></div>
+      <div class="selected" id="pkSel"></div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Message</div><div class="panel-sub">Sent right away. It can't be taken back.</div></div></div>
+      <div class="panel-body">
+        <div class="field"><label for="pTitle">Title <span class="count" id="tCount"></span></label><input class="input" id="pTitle" maxlength="65" value="${esc(push.title)}"></div>
+        <div class="field"><label for="pBody">Message <span class="count" id="bCount"></span></label><textarea class="input" id="pBody" maxlength="240">${esc(push.body)}</textarea></div>
+        <label class="check"><input type="checkbox" id="pOpen" ${push.openRoom ? 'checked' : ''}> Tapping it opens their room (people picked on their own land on their events list)</label>
+        <div class="section-label">Preview</div>
+        <div class="phone-preview"><div class="app">Rollout · now</div><div class="pt" id="pvT"></div><div class="pb" id="pvB"></div></div>
+        <div class="reach" id="reach">Pick a room or person.</div>
+        <button class="btn primary block" id="pSend" type="button" disabled>Send push</button>
+      </div></section></div>`;
+
+  const list = $('#pkList'), sel = $('#pkSel');
+  const loadList = async () => {
+    list.innerHTML = '<div class="state">Loading…</div>';
+    const q = encodeURIComponent(push.q);
+    const d = await api(push.kind === 'rooms' ? `/rooms?page=1&q=${q}` : `/users?page=1&q=${q}`);
+    if (!d.items.length) { list.innerHTML = '<div class="empty">Nothing matches.</div>'; return; }
+    list.innerHTML = d.items.map(it => {
+      const picked = push.selected.some(x => x.id === it.id);
+      const left = push.kind === 'rooms'
+        ? `<div class="emoji">${icon(it.emoji, it.name)}</div><div class="grow"><div class="n" style="font-weight:600">${esc(it.name)}</div><div class="muted" style="font-size:12px">${fmt(it.member_count)} ${it.member_count === 1 ? 'person' : 'people'} · ${esc(it.creator?.name || '')} · ${fmtDate(it.created_at)}</div></div>`
+        : `${avatar(it)}<div class="grow"><div style="font-weight:600">${esc(it.name || 'User')}</div><div class="muted" style="font-size:12px">${esc(it.email || 'No email')}</div></div>`;
+      return `<div class="pick-row">${left}<button class="btn sm" type="button" data-pick="${it.id}" ${picked ? 'disabled' : ''}>${picked ? 'Added' : 'Add'}</button></div>`;
+    }).join('') + (d.total > d.items.length ? `<div class="state" style="padding:12px">${fmt(d.total - d.items.length)} more. Search to narrow it down.</div>` : '');
+    const byId = Object.fromEntries(d.items.map(i => [i.id, i]));
+    $$('[data-pick]', list).forEach(b => b.addEventListener('click', () => {
+      const it = byId[b.dataset.pick];
+      pushTo({ id: it.id, kind: push.kind, label: push.kind === 'rooms' ? it.name : (it.name || it.email || 'User') });
+      b.disabled = true; b.textContent = 'Added'; drawSelected();
+    }));
+  };
+
+  let reachSeq = 0;
+  const updateReach = async () => {
+    const seq = ++reachSeq, n = push.selected.length;
+    if (!n) { $('#reach').textContent = 'Pick a room or person.'; validate(0); return; }
+    $('#reach').textContent = 'Counting…';
+    try {
+      const r = await api('/push/preview', { method: 'POST', body: JSON.stringify(targets()) });
+      if (seq !== reachSeq) return;
+      $('#reach').innerHTML = `Reaches <b>${fmt(r.people)}</b> ${r.people === 1 ? 'person' : 'people'}; <b>${fmt(r.with_push)}</b> of them can get a push.` +
+        (r.people > r.with_push ? ' The rest have notifications off or haven’t opened the app since signing in.' : '');
+      validate(r.with_push);
+    } catch (e) { if (seq === reachSeq) $('#reach').textContent = e.message; }
+  };
+  let reachable = 0;
+  const validate = n => { if (n !== undefined) reachable = n;
+    $('#pSend').disabled = !(push.title.trim() && push.body.trim() && push.selected.length && reachable); };
+  const targets = () => ({ room_ids: push.selected.filter(x => x.kind === 'rooms').map(x => x.id), user_ids: push.selected.filter(x => x.kind === 'users').map(x => x.id) });
+
+  const drawSelected = () => {
+    sel.innerHTML = push.selected.length ? push.selected.map(x => `<span class="sel-chip">${x.kind === 'rooms' ? 'Room' : 'Person'}: ${esc(x.label)}<button type="button" data-rm="${x.id}" aria-label="Remove">×</button></span>`).join('')
+      : '<span class="muted">Nothing picked yet.</span>';
+    $$('[data-rm]', sel).forEach(b => b.addEventListener('click', () => {
+      push.selected = push.selected.filter(x => x.id !== b.dataset.rm); drawSelected();
+      const add = $(`[data-pick="${b.dataset.rm}"]`, list); if (add) { add.disabled = false; add.textContent = 'Add'; }
+    }));
+    updateReach();
+  };
+  const drawPreview = () => {
+    $('#pvT').textContent = push.title || 'Title'; $('#pvB').textContent = push.body || 'Your message';
+    $('#tCount').textContent = `${push.title.length}/65`; $('#bCount').textContent = `${push.body.length}/240`; validate();
+  };
+
+  $('#pkKind').addEventListener('click', e => { if (!e.target.dataset.v) return; push.kind = e.target.dataset.v;
+    $$('#pkKind .chip').forEach(c => c.classList.toggle('on', c === e.target)); loadList(); });
+  $('#pkQ').addEventListener('input', debounce(e => { push.q = e.target.value; loadList(); }));
+  $('#pTitle').addEventListener('input', e => { push.title = e.target.value; drawPreview(); });
+  $('#pBody').addEventListener('input', e => { push.body = e.target.value; drawPreview(); });
+  $('#pOpen').addEventListener('change', e => { push.openRoom = e.target.checked; });
+  $('#pSend').addEventListener('click', async () => {
+    const names = push.selected.map(x => esc(x.label)).join(', ');
+    const ok = await confirmDialog({ title: `Send to ${fmt(reachable)} ${reachable === 1 ? 'phone' : 'phones'}?`, confirm: 'Send now',
+      body: `<b>${esc(push.title)}</b><br>${esc(push.body)}<br><br>To: ${names}` });
+    if (!ok) return;
+    const btn = $('#pSend'); btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const r = await api('/push', { method: 'POST', body: JSON.stringify({ ...targets(), title: push.title, body: push.body, open_room: push.openRoom }) });
+      const parts = [`Delivered to ${r.delivered} ${r.delivered === 1 ? 'phone' : 'phones'}`];
+      if (r.failed) parts.push(`${r.failed} failed${r.dead_tokens ? ` (${r.dead_tokens} phone${r.dead_tokens === 1 ? '' : 's'} no longer registered)` : ''}`);
+      if (r.unconfirmed) parts.push(`${r.unconfirmed} not confirmed yet`);
+      toast(parts.join(' · ') + '.', !r.delivered && !r.unconfirmed);
+      push.title = ''; push.body = ''; push.selected = []; pagePush(root);
+    } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = 'Send push'; }
+  });
+
+  drawPreview(); drawSelected(); await loadList();
+}
+
+
+/* ═══════════════ SERVICES ═══════════════ */
+// Only the parts that matter. The rest (push, the worker server) are in the list below the map.
+// x/y are box centres.
+const SVC_POS = { app: [100, 130], api: [330, 130], database: [570, 40], media: [570, 130], payments: [570, 220], face_worker: [830, 40], video_worker: [830, 130] };
+const SVC_EDGES = [['app', 'api'], ['api', 'database'], ['api', 'media'], ['api', 'payments'],
+  ['face_worker', 'database'], ['video_worker', 'database'], ['face_worker', 'media'], ['video_worker', 'media']];
+const svcTone = st => st === 'ok' ? 'ok' : st === 'unknown' ? 'na' : 'bad';
+const svcLabel = st => ({ ok: 'Working', degraded: 'Having problems', down: 'Down', unknown: 'Not checked' }[st] || st);
+
+async function pageServices(root) {
+  let selected = 'api', logTimers = [], data = null;
+  root.innerHTML = `<div class="stack"><div id="svcTop"></div>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">How it connects</div><div class="panel-sub">Click a part to see its logs. A red line touches a part with a problem. Refreshes every 30 seconds.</div></div>
+      <div class="legend-row"><span><i class="dot ok"></i>Working</span><span><i class="dot bad"></i>Problem</span><span><i class="dot na"></i>Not checked</span></div></div>
+      <div class="svc-hint">Swipe sideways to see the whole map</div><div class="svc-map" id="svcMap"></div></section>
+    <div id="svcLogs"></div>
+    <section class="card"><div class="panel-head"><div class="panel-title">Every service</div><a href="/admin/ops/" style="font-size:12.5px">Deploys, server graphs and job queue →</a></div><div class="panel-body" style="padding:8px 0 0" id="svcList"></div></section></div>`;
+
+  const showLogs = async () => {
+    logTimers.forEach(clearInterval); logTimers = [];
+    const sv = data.by[selected], box = $('#svcLogs');
+    if (!sv || selected === 'app') { box.innerHTML = ''; return; }
+    if (sv.logs) {
+      box.innerHTML = `<div id="svcLogHost"></div>`;
+      await pageLogs($('#svcLogHost'), sv.logs, { title: `${sv.name} logs`, register: id => { logTimers.push(id); timers.push(id); } });
+      return;
+    }
+    box.innerHTML = `<section class="card"><div class="panel-head"><div><div class="panel-title">${esc(sv.name)}</div><div class="panel-sub">${esc(svcLabel(sv.state))}</div></div></div>
+      <div class="panel-body"><div>${esc(sv.detail || '')}</div>
+      ${sv.vitals?.length ? `<div class="vitals">${sv.vitals.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>` : ''}
+      <p class="muted" style="margin-top:10px;font-size:12.5px">${esc(sv.name)} doesn't write a log of its own. Failed requests to it show up in <a href="#/logs/errors">All errors</a>.</p></div></section>`;
+  };
+
+  const draw = async () => {
+    const d = await api('/dashboard/ops/services');
+    const by = Object.fromEntries(d.services.map(x => [x.id, x]));
+    by.app = { id: 'app', name: 'Mobile app', provider: 'iOS · Android', state: 'ok' };
+    data = { by, d };
+    const bad = d.services.filter(x => svcTone(x.state) === 'bad');
+    const W = 100, H = 40;
+    const colour = t => `var(--${t === 'ok' ? 'ok' : t === 'bad' ? 'bad' : 'muted'})`;
+    const edges = SVC_EDGES.map(([a, b]) => {
+      const [x1, y1] = SVC_POS[a], [x2, y2] = SVC_POS[b];
+      const ta = svcTone(by[a]?.state), tb = svcTone(by[b]?.state);
+      const t = ta === 'bad' || tb === 'bad' ? 'bad' : ta === 'na' || tb === 'na' ? 'na' : 'ok';
+      const sx = x1 + (x2 > x1 ? W : -W), ex = x2 + (x2 > x1 ? -W : W), mx = (sx + ex) / 2;
+      return `<path d="M${sx},${y1} C${mx},${y1} ${mx},${y2} ${ex},${y2}" fill="none" stroke="${colour(t)}" stroke-width="2" ${t === 'na' ? 'stroke-dasharray="4 4"' : ''} opacity=".85"/>`;
+    }).join('');
+    const nodes = Object.entries(SVC_POS).map(([id, [x, y]]) => {
+      const sv = by[id]; if (!sv) return '';
+      const t = svcTone(sv.state), on = id === selected;
+      return `<g class="svc-node" data-id="${id}" tabindex="0" role="button" aria-label="${esc(sv.name)}: ${esc(svcLabel(sv.state))}"><title>${esc(sv.name)}: ${esc(svcLabel(sv.state))}${sv.detail ? ' · ' + esc(sv.detail) : ''}</title>
+        <rect x="${x - W}" y="${y - H / 2 - 4}" width="${W * 2}" height="${H + 8}" rx="4" stroke="${colour(t)}" stroke-width="${on ? 3.5 : 1.5}"/>
+        <rect x="${x - W}" y="${y - H / 2 - 4}" width="6" height="${H + 8}" fill="${colour(t)}" stroke="none"/>
+        <text x="${x - W + 18}" y="${y - 1}">${esc(sv.name)}</text><text class="sub" x="${x - W + 18}" y="${y + 14}">${esc(sv.provider || '')}</text></g>`;
+    }).join('');
+    const commit = d.config.commit ? ` · commit <span class="mono">${esc(d.config.commit)}</span>` : '';
+    $('#svcTop').innerHTML = bad.length ? `<div class="banner bad"><span class="dot bad" style="margin-top:4px"></span><div><b>${bad.length} ${bad.length === 1 ? 'service needs' : 'services need'} attention</b>${bad.map(x => esc(x.name) + ': ' + esc(x.detail)).join(' · ')}</div></div>`
+      : `<div class="banner"><span class="dot ok" style="margin-top:4px"></span><div><b>Everything is working</b>Checked ${ago(d.checked_at)}${commit}</div></div>`;
+    $('#svcMap').innerHTML = `<svg viewBox="-20 -10 1070 280" role="img" aria-label="Service map">${edges}${nodes}</svg>`;
+    $('#svcList').innerHTML = d.services.map(x => `<div class="svc-row"><span class="dot ${svcTone(x.state)}"></span><div class="grow">
+          <div><b>${esc(x.name)}</b> <span class="muted" style="font-size:12.5px">${esc(x.provider)}</span> · <span style="color:var(--${svcTone(x.state) === 'ok' ? 'ok' : svcTone(x.state) === 'bad' ? 'bad' : 'sub'});font-weight:600;font-size:12.5px">${esc(svcLabel(x.state))}</span></div>
+          <div class="muted" style="font-size:12.5px">${esc(x.detail || x.role)}</div>
+          ${x.vitals?.length ? `<div class="vitals">${x.vitals.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>` : ''}</div></div>`).join('');
+    $$('.svc-node', $('#svcMap')).forEach(g => {
+      const pick = () => { selected = g.dataset.id; draw().catch(() => {}); showLogs(); };
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+  };
+  await draw(); await showLogs();
+  timers.push(setInterval(() => { if (!document.hidden) draw().catch(() => {}); }, 30000));
+}
+
+/* ═══════════════ LOGS ═══════════════ */
+const LOG_TABS = [['errors', 'All errors'], ['api', 'API server'], ['face', 'Face worker'], ['video', 'Video worker']];
+const clockTime = d => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
+const lvlClass = l => /ERR|CRIT|FATAL/i.test(l || '') ? 'err' : /WARN/i.test(l || '') ? 'warn' : '';
+
+// opts.title: show it instead of the tab links (used inside the Services page); opts.register: where the
+// refresh timers go, so that page can stop them when another part is picked.
+async function pageLogs(root, tab, opts = {}) {
+  tab = LOG_TABS.some(t => t[0] === tab) ? tab : 'errors';
+  const keep = opts.register || (id => timers.push(id));
+  let q = '', errorsOnly = false, hours = 24, lines = [];
+  root.innerHTML = `<section class="card"><div class="toolbar">${opts.title ? `<div class="panel-title" style="margin-right:6px">${esc(opts.title)}</div>` : `<div class="chips">${LOG_TABS.map(([v, l]) => `<a class="chip ${v === tab ? 'on' : ''}" href="#/logs/${v}" style="text-decoration:none">${l}</a>`).join('')}</div>`}
+      <input class="input" id="lq" placeholder="Filter lines">
+      ${tab === 'errors' ? `<select class="input" id="lh" style="width:auto">${[[1, 'Last hour'], [24, 'Last 24 hours'], [72, 'Last 3 days'], [168, 'Last 7 days']].map(([v, l]) => `<option value="${v}" ${v === 24 ? 'selected' : ''}>${l}</option>`).join('')}</select>`
+        : '<button class="chip" id="lerr" type="button">Errors & warnings only</button>'}
+      <span class="muted" id="lcount" style="font-size:12.5px"></span></div>
+    <div id="lbody"><div class="state">Loading…</div></div></section>`;
+  const body = $('#lbody');
+  const render = () => {
+    const shown = lines.filter(l => (!errorsOnly || lvlClass(l.level)) && (!q || (l.message || '').toLowerCase().includes(q)));
+    $('#lcount').textContent = `${fmt(shown.length)} lines`;
+    if (!shown.length) { body.innerHTML = `<div class="empty">${lines.length ? 'No lines match.' : tab === 'errors' ? 'No errors in this window.' : tab === 'video' ? 'No log lines yet. The video worker starts sending logs once the new version is running on the server.' : 'No log lines.'}</div>`; return; }
+    const old = body.querySelector('.term'), hadOld = !!old;
+    const atBottom = old && old.scrollHeight - old.scrollTop - old.clientHeight < 40;
+    body.innerHTML = `<div class="term">${shown.map(l => `<div class="ln ${lvlClass(l.level)}"><span class="ts">${esc(clockTime(l.at))}</span>${tab === 'errors' ? `<span class="src">${esc(l.source)}</span>` : ''}<span class="lv">${esc((l.level || '').slice(0, 5))}</span><span class="msg">${esc(l.message)}</span></div>`).join('')}</div>`;
+    const t = body.querySelector('.term'); if (tab !== 'errors' && (atBottom || !hadOld)) t.scrollTop = t.scrollHeight;
+  };
+  $('#lq').addEventListener('input', debounce(e => { q = e.target.value.toLowerCase(); render(); }, 150));
+  $('#lerr')?.addEventListener('click', e => { errorsOnly = !errorsOnly; e.target.classList.toggle('on', errorsOnly); render(); });
+
+  if (tab === 'errors') {
+    const load = async () => { const d = await api(`/dashboard/ops/errors/recent?hours=${hours}`); lines = d.items; render(); };
+    $('#lh').addEventListener('change', e => { hours = Number(e.target.value); load(); });
+    await load(); keep(setInterval(() => { if (!document.hidden) load().catch(() => {}); }, 30000));
+  } else if (tab === 'api') {
+    const load = async () => {
+      try { const d = await api('/dashboard/deployments/logs'); lines = (d.logs || []).map(l => ({ at: l.timestamp, level: l.severity, message: l.message })); }
+      catch (e) { body.innerHTML = `<div class="empty">Couldn't read the API logs: ${esc(e.message)}</div>`; return; }
+      if (!lines.length) { body.innerHTML = '<div class="empty">No lines came back. Railway log access may not be set up on this server (RAILWAY_API_TOKEN).</div>'; $('#lcount').textContent = ''; return; }
+      render();
+    };
+    await load(); keep(setInterval(() => { if (!document.hidden) load().catch(() => {}); }, 15000));
+  } else {
+    let lastId = 0;
+    const load = async () => {
+      const d = await api(`/dashboard/ops/worker/logs?source=${tab}&after_id=${lastId}&limit=${lastId ? 500 : 400}`);
+      if (!d.configured) { body.innerHTML = `<div class="empty">${esc(d.error || 'This worker is not sending logs yet.')}</div>`; return; }
+      const fresh = d.logs.map(l => ({ id: l.id, at: l.created_at, level: l.level, message: l.message }));
+      if (fresh.length) { lastId = fresh[fresh.length - 1].id; lines = lines.concat(fresh).slice(-2000); }
+      render();
+    };
+    await load(); keep(setInterval(() => { if (!document.hidden) load().catch(() => {}); }, 5000));
+  }
+}
+
+/* ═══════════════ APP VERSION ═══════════════ */
+async function pageApp(root) {
+  const d = await api('/dashboard/ops/app-config');
+  const c = d.config, live = /media\.rollouts\.in/.test(d.public_url || '');
+  root.innerHTML = `<div class="stack">
+    ${live ? `<div class="banner warn"><div><b>This changes the live app for everyone</b>Every installed copy of Rollout reads this file at <a href="${esc(d.public_url)}" target="_blank" rel="noopener">${esc(d.public_url)}</a>, including from this stage dashboard. Phones see a change within about a minute.</div></div>`
+      : `<div class="banner"><div><b>Not the live file</b>This server saves to <span class="mono">${esc(d.public_url || 'unknown')}</span>. Phones read media.rollouts.in/app-config.json, so changes here don't reach them.</div></div>`}
+    <div class="kpis">${kpi('Minimum version', esc(c.min_version || '—'), 'Older apps must update')}${kpi('Latest version', esc(c.latest_version || '—'), 'Older apps are asked to update')}
+      ${kpi('Maintenance', c.maintenance?.on ? '<span style="color:var(--bad)">On</span>' : '<span style="color:var(--ok)">Off</span>', c.maintenance?.on ? 'App shows the notice' : 'App works normally')}</div>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Versions</div><div class="panel-sub">Use numbers like 1.5.2.</div></div></div>
+      <div class="panel-body"><div class="form-grid">
+        <div class="field"><label for="minV">Minimum version: below this the app is blocked until it updates</label><input class="input" id="minV" value="${esc(c.min_version)}" placeholder="1.0.0"></div>
+        <div class="field"><label for="latV">Latest version: below this the app suggests an update</label><input class="input" id="latV" value="${esc(c.latest_version)}" placeholder="optional"></div>
+        <div class="field"><label for="andU">Play Store link</label><input class="input" id="andU" value="${esc(c.android_url)}"></div>
+        <div class="field"><label for="iosU">App Store link</label><input class="input" id="iosU" value="${esc(c.ios_url)}"></div>
+        <div class="field"><label for="updU">Fallback update link</label><input class="input" id="updU" value="${esc(c.update_url)}"></div></div></div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Maintenance</div><div class="panel-sub">Shows a "we'll be right back" screen instead of the app. Works even when the API is down.</div></div></div>
+      <div class="panel-body"><label class="switch-row"><input type="checkbox" id="mOn" ${c.maintenance?.on ? 'checked' : ''}> Maintenance mode on</label>
+        <div class="field"><label for="mMsg">Message <span class="count" id="mCount"></span></label><textarea class="input" id="mMsg" maxlength="300" placeholder="We're making Rollout better. Back in a few minutes.">${esc(c.maintenance?.message || '')}</textarea></div></div></section>
+    <div><button class="btn primary" id="saveCfg" type="button">Save changes</button> <span class="muted" id="cfgNote" style="font-size:12.5px;margin-left:8px"></span></div></div>`;
+  const val = id => $('#' + id).value.trim();
+  const form = () => ({ min_version: val('minV'), latest_version: val('latV'), update_url: val('updU'), android_url: val('andU'), ios_url: val('iosU'),
+    maintenance: { on: $('#mOn').checked, message: $('#mMsg').value.trim() } });
+  const changes = () => {
+    const f = form(), out = [];
+    if (f.min_version !== (c.min_version || '')) out.push(`Minimum version ${esc(c.min_version || '—')} → <b>${esc(f.min_version || '1.0.0')}</b>`);
+    if (f.latest_version !== (c.latest_version || '')) out.push(`Latest version ${esc(c.latest_version || '—')} → <b>${esc(f.latest_version || '—')}</b>`);
+    if (f.maintenance.on !== !!c.maintenance?.on) out.push(`Maintenance <b>${f.maintenance.on ? 'ON: the app stops working for everyone' : 'off'}</b>`);
+    if (f.maintenance.message !== (c.maintenance?.message || '')) out.push('Maintenance message changed');
+    if (f.android_url !== c.android_url || f.ios_url !== c.ios_url || f.update_url !== c.update_url) out.push('Store links changed');
+    return out;
+  };
+  const sync = () => { const n = changes().length; $('#saveCfg').disabled = !n; $('#cfgNote').textContent = n ? `${n} unsaved ${n === 1 ? 'change' : 'changes'}` : 'No changes';
+    $('#mCount').textContent = `${$('#mMsg').value.length}/300`; };
+  root.addEventListener('input', sync); root.addEventListener('change', sync); sync();
+  $('#saveCfg').addEventListener('click', async () => {
+    const list = changes();
+    const ok = await confirmDialog({ title: 'Save app settings?', danger: form().maintenance.on && !c.maintenance?.on, confirm: 'Save',
+      body: list.join('<br>') + (live ? '<br><br>Every installed app picks this up within about a minute.' : '') });
+    if (!ok) return;
+    try { await api('/dashboard/ops/app-config', { method: 'PUT', body: JSON.stringify(form()) }); toast('Saved.'); route(); }
+    catch (e) { toast(e.message, true); }
+  });
+}
+
+/* ═══════════════ SHELL ═══════════════ */
+const SECTIONS = {
+  overview: ['Overview', 'Everything at a glance', pageOverview],
+  users: ['Users', 'Everyone who has opened the app', pageUsers],
+  rooms: ['Rooms', 'Every event', pageRooms],
+  revenue: ['Revenue', 'Paid events and upgrades', pageRevenue],
+  push: ['Push notifications', 'Send your own message to rooms or people', pagePush],
+  services: ['Services', 'Every running piece, and whether it is working', pageServices],
+  logs: ['Logs', 'What every service is saying, newest last', root => pageLogs(root, '')],
+  app: ['App version', 'Force updates and maintenance mode for the mobile app', pageApp],
+};
+function setTitle(t, s) { $('#pageTitle').textContent = t; $('#pageSub').textContent = s || ''; document.title = `${t} — Rollout Admin`; }
+let lastRoute = null;
+let timers = [];
+async function route() {
+  routeSeq++;
+  timers.forEach(clearInterval); timers = [];
+  const [sec, id] = location.hash.replace(/^#\/?/, '').split('/');
+  const key = SECTIONS[sec] ? sec : 'overview';
+  const [title, sub, fn] = SECTIONS[key];
+  $$('#nav a[data-sec]').forEach(a => a.classList.toggle('on', a.dataset.sec === key));
+  document.body.classList.remove('nav-open');
+  if (lastRoute !== location.hash) window.scrollTo(0, 0);
+  lastRoute = location.hash;
+  setTitle(title, sub);
+  const root = $('#content');
+  root.innerHTML = '<div class="state">Loading…</div>';
+  try {
+    if (id && key === 'users') await pageUser(root, id);
+    else if (id && key === 'rooms') await pageRoom(root, id);
+    else if (key === 'logs') await pageLogs(root, id);
+    else await fn(root);
+  } catch (e) {
+    if (!TOKEN) return;
+    if (e.message === 'unreachable') {
+      const last = Number(readStore(lastOkKey(SERVER)));
+      root.innerHTML = `<div class="banner bad"><span class="dot bad" style="margin-top:4px"></span><div><b>${esc(SERVERS[SERVER].label)} server unreachable</b>
+        It didn't answer. It may be down or restarting. It last answered ${last ? ago(last) : 'never from this browser'}.
+        <div style="margin-top:8px"><button class="btn sm" id="retryBtn" type="button">Try again</button></div></div></div>`;
+      $('#retryBtn').addEventListener('click', route);
+    } else root.innerHTML = `<div class="card state">Couldn't load this: ${esc(e.message)}</div>`;
+  }
+}
+
+function showApp() {
+  $('#gate').classList.add('hidden'); $('#app').style.display = 'block';
+  $('#whoami').textContent = readStore(emailKey(SERVER));
+  route();
+}
+function signOut() {
+  TOKEN = ''; writeStore(tokenKey(SERVER), '');
+  $('#app').style.display = 'none'; $('#gate').classList.remove('hidden'); $('#password').value = '';
+}
+
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('#loginBtn'), err = $('#loginErr'); err.textContent = ''; btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res = await fetchT(SERVERS[SERVER].base + '/admin/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: $('#email').value, password: $('#password').value }) }, 20000);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      err.textContent = res.status === 401 ? 'Wrong email or password.' : res.status === 429 ? 'Too many tries. Wait 15 minutes.'
+        : res.status === 404 ? `${SERVERS[SERVER].label} doesn't have the admin dashboard yet.` : (body.detail || `Server error (${res.status}).`);
+      return;
+    }
+    TOKEN = body.token; writeStore(tokenKey(SERVER), TOKEN); writeStore(emailKey(SERVER), body.email); $('#password').value = '';
+    showApp();
+  } catch { err.textContent = `The ${SERVERS[SERVER].label} server didn't answer. It may be down or very slow. Try again.`; }
+  finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+});
+$('#logoutBtn').addEventListener('click', signOut);
+function applyTheme(dark) {
+  if (dark) document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme;
+  writeStore('rollout_admin_theme', dark ? 'dark' : '');
+  $$('[data-theme-toggle]').forEach(b => { b.textContent = dark ? 'Light' : 'Dark'; });
+}
+$$('[data-theme-toggle]').forEach(b => b.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme !== 'dark')));
+applyTheme(document.documentElement.dataset.theme === 'dark');
+$('#menuBtn').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+$('#refreshBtn').addEventListener('click', route);
+window.addEventListener('hashchange', () => { if (TOKEN) route(); });
+
+// ── Which server ──
+function renderServerUI() {
+  const chips = Object.entries(SERVERS).map(([k, v]) => `<button class="chip ${k === SERVER ? 'on' : ''}" data-server="${k}" type="button">${v.label}</button>`).join('');
+  $('#gateServers').innerHTML = chips; $('#envSwitch').innerHTML = chips;
+  const prod = SERVER === 'production';
+  const badge = $('#envBadge'); badge.textContent = SERVERS[SERVER].label.toUpperCase();
+  badge.className = 'env-badge ' + (prod ? 'prod' : SERVER === 'local' ? 'local' : 'stage');
+  $('#prodBar').classList.toggle('hidden', !prod);
+  $('#gateHeading').textContent = `Sign in to ${SERVERS[SERVER].label}`;
+  document.body.classList.toggle('is-prod', prod);
+}
+function selectServer(s) {
+  if (!SERVERS[s] || s === SERVER) return;
+  SERVER = s; writeStore(SERVER_KEY, s); TOKEN = readStore(tokenKey(s)); lastRoute = null; routeSeq++;
+  timers.forEach(clearInterval); timers = []; renderServerUI();
+  if (TOKEN) { showApp(); } else { $('#app').style.display = 'none'; $('#gate').classList.remove('hidden'); $('#loginErr').textContent = ''; }
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-server]'); if (b) selectServer(b.dataset.server); });
+
+// Is each backend answering? Needs no sign-in, so it still works when the one you picked is down.
+const health = {};
+async function pollHealth() {
+  await Promise.all(Object.entries(SERVERS).map(async ([k, v]) => {
+    const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 7000);
+    try { const r = await fetch(v.base + '/', { signal: ctl.signal, cache: 'no-store' }); health[k] = r.ok; }
+    catch { health[k] = false; }
+    clearTimeout(t);
+  }));
+  $('#health').innerHTML = Object.entries(SERVERS).map(([k, v]) => `<div class="health-row"><span class="dot ${health[k] ? 'ok' : 'bad'}"></span>${v.label}: ${health[k] ? 'up' : '<b style="color:var(--bad)">not answering</b>'}</div>`).join('');
+}
+setInterval(() => { if (!document.hidden) pollHealth(); }, 30000);
+
+(async () => {
+  const saved = readStore(SERVER_KEY); if (SERVERS[saved]) SERVER = saved;
+  renderServerUI(); pollHealth();
+  TOKEN = readStore(tokenKey(SERVER));
+  if (!TOKEN) return;
+  try { await api('/me'); showApp(); }
+  catch (e) { if (e.message === 'unreachable') showApp(); /* api() signs out on 401 */ }
+})();
+</script>
+</body>
+</html>

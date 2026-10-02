@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Rollout Ops</title>
+  <script>try { if (localStorage.getItem("rollout_admin_theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch {}</script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #5B4FD9; --primary-dark: #4338CA; --primary-light: #EEF2FF; --accent: #A78BFA;
+      --bg: #F4F4FB; --surface: #FFFFFF; --text: #1C1B1F; --sub: #6B7280; --muted: #9CA3AF;
+      --border: #E6E4EF; --border-soft: #F0EFF7;
+      --side: #171533; --side-2: #201D45; --side-text: #B9B6DA; --side-dim: #6F6C9A;
+      --green: #059669; --green-bg: #D1FAE5; --red: #DC2626; --red-bg: #FEE2E2;
+      --amber: #B45309; --amber-bg: #FEF3C7; --blue: #2563EB; --blue-bg: #DBEAFE; --grey-bg: #F3F4F6;
+      --radius: 14px; --shadow: 0 1px 2px rgba(23,21,51,.04), 0 4px 16px rgba(23,21,51,.05);
+      --side-w: 252px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg);
+           color: var(--text); line-height: 1.5; min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
+    button { font-family: inherit; cursor: pointer; }
+    i[data-lucide], svg.lucide { width: 16px; height: 16px; flex-shrink: 0; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+    /* No icons anywhere */
+    i[data-lucide], svg.lucide { display: none !important; }
+    .kpi-ico { display: none !important; }
+    .brand-mark::after { content: "R"; font-weight: 800; font-size: 17px; }
+    .menu-btn::after { content: "Menu"; font-size: 12.5px; font-weight: 600; }
+    .close-btn::after { content: "Close"; font-size: 12px; font-weight: 600; padding: 0 4px; }
+    .nav-item { padding: 10px 12px; }
+
+    /* ── Gate ── */
+    #gate { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 300; }
+    #gate.hidden { display: none; }
+    .gate-card { background: var(--surface); border-radius: 4px; padding: 38px 34px; width: 100%; max-width: 400px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+    .brand-mark { width: 34px; height: 34px; border-radius: 4px; background: var(--primary); display: flex; align-items: center; justify-content: center; color: var(--on-primary); }
+    .brand-mark i, .brand-mark svg { width: 18px; height: 18px; }
+    .brand-name { font-weight: 800; font-size: 17px; letter-spacing: -.3px; }
+    .gate-card h2 { margin: 22px 0 4px; font-size: 28px; font-weight: 900; letter-spacing: -.4px; }
+    .gate-card p { color: var(--sub); font-size: 13px; margin-bottom: 18px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--sub); }
+    .field input { width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 4px; font-size: 14px; outline: none; background: var(--surface); }
+    .field input:focus { border-color: var(--primary); }
+    .field input.err { border-color: var(--red); }
+    .err-msg { display: none; align-items: center; gap: 6px; color: var(--red); font-size: 12px; margin-top: 8px; }
+    .err-msg.show { display: flex; }
+    .btn-primary { width: 100%; margin-top: 16px; padding: 12px; border: none; border-radius: 4px; background: var(--primary); color: var(--on-primary); font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { opacity: .6; cursor: default; }
+
+    /* ── Shell ── */
+    #app { display: none; min-height: 100vh; }
+    .sidebar { position: fixed; inset: 0 auto 0 0; width: var(--side-w); background: var(--side); color: var(--side-text);
+               display: flex; flex-direction: column; z-index: 100; transition: transform .25s ease; }
+    .side-top { padding: 20px 18px 14px; }
+    .side-top .brand-name { color: var(--text); }
+    .side-tag { margin-top: 10px; font-size: 10.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--side-dim); }
+    .side-nav { flex: 1; overflow-y: auto; padding: 4px 10px 16px; }
+    .nav-group { margin-top: 16px; }
+    .nav-label { padding: 0 10px 6px; font-size: 11.5px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; color: var(--side-dim); }
+    .nav-item { display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 11px; border: none; background: none; color: var(--side-text);
+                border-radius: 4px; font-size: 13.5px; font-weight: 500; text-align: left; margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: var(--side-2); color: var(--text); }
+    .nav-item.active { background: var(--primary); color: var(--on-primary); font-weight: 600; }
+    .nav-badge { margin-left: auto; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 4px; background: var(--side-2); color: var(--side-text); }
+    .nav-item.active .nav-badge { background: var(--red); color: #fff; }
+    .nav-badge.bad { background: var(--red); color: #fff; }
+    .side-foot { padding: 14px 16px; border-top: 1px solid var(--side-2); font-size: 12px; }
+    .foot-row { display: flex; align-items: center; gap: 8px; color: var(--side-text); margin-bottom: 6px; }
+    .foot-row b { color: var(--text); font-weight: 600; }
+    .foot-btn { margin-top: 8px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px; border-radius: 4px;
+                border: 1px solid var(--side-2); background: none; color: var(--side-text); font-size: 12px; font-weight: 600; }
+    .foot-btn:hover { background: var(--side-2); color: var(--text); }
+    .dot { width: 8px; height: 8px; border-radius: 4px; background: var(--muted); display: inline-block; flex-shrink: 0; }
+    .dot.ok { background: #22C55E; }
+    .dot.bad { background: #EF4444; }
+    .dot.warn { background: #F59E0B; }
+
+    .main { margin-left: var(--side-w); min-height: 100vh; }
+    .topbar { position: sticky; top: 0; z-index: 50; background: rgba(244,244,251,.88); backdrop-filter: blur(10px);
+              border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; gap: 14px; }
+    .menu-btn { display: none; border: 1px solid var(--border); background: var(--surface); border-radius: 4px; padding: 7px; }
+    .page-title { font-size: 26px; font-weight: 900; letter-spacing: -.4px; line-height: 1.2; }
+    .page-sub { font-size: 12.5px; color: var(--sub); margin-top: 1px; }
+    .top-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .updated { font-size: 12px; color: var(--sub); white-space: nowrap; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 4px; border: 1px solid var(--border);
+           background: var(--surface); font-size: 12.5px; font-weight: 600; color: var(--text); }
+    .btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+    .btn.danger:hover { border-color: var(--red); color: var(--red); }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--sub); cursor: pointer; user-select: none; }
+    .toggle input { accent-color: var(--primary); }
+    .spinning i, .spinning svg { animation: spin .9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .content { padding: 24px 28px 48px; max-width: 1500px; }
+    .sec { border: 1.5px solid; border-radius: 4px; padding: 18px 20px 20px; }
+    .sec > * + * { margin-top: 14px; }
+    .sec-head { display: flex; align-items: center; gap: 12px; }
+    .sec-title { font-weight: 900; font-size: 23px; letter-spacing: -.3px; }
+    .grid { display: grid; gap: 14px; }
+    .g-4 { grid-template-columns: repeat(4, 1fr); }
+    .g-3 { grid-template-columns: repeat(3, 1fr); }
+    .g-2 { grid-template-columns: repeat(2, 1fr); }
+    .g-auto { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .stack > * + * { margin-top: var(--gap, 18px); }
+
+    /* ── Cards & panels ── */
+    .card { background: var(--surface); border-radius: 4px; border: 1px solid var(--border-soft); }
+    .kpi { padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+    .kpi-top { display: flex; align-items: center; justify-content: space-between; color: var(--sub); font-size: 12px; font-weight: 600; }
+    .kpi-ico { width: 30px; height: 30px; border-radius: 4px; display: flex; align-items: center; justify-content: center; background: var(--primary-light); color: var(--primary); }
+    .kpi-ico.green { background: var(--green-bg); color: var(--green); }
+    .kpi-ico.red { background: var(--red-bg); color: var(--red); }
+    .kpi-ico.amber { background: var(--amber-bg); color: var(--amber); }
+    .kpi-ico.blue { background: var(--blue-bg); color: var(--blue); }
+    .kpi-val { font-size: 27px; font-weight: 800; letter-spacing: -.8px; line-height: 1.1; }
+    .kpi-sub { font-size: 12px; color: var(--sub); }
+    .panel { overflow: hidden; }
+    .panel-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+    .panel-title { font-weight: 800; font-size: 17px; letter-spacing: -.2px; }
+    .panel-sub { font-size: 12px; color: var(--sub); }
+    .panel-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .panel-body { padding: 16px 18px; }
+    .panel-body.flush { padding: 0; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--sub);
+         padding: 10px 16px; background: #FAFAFE; border-bottom: 1px solid var(--border-soft); white-space: nowrap; position: sticky; top: 0; }
+    td { padding: 11px 16px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: #FAFAFF; }
+    .num { font-variant-numeric: tabular-nums; }
+    .date { color: var(--sub); white-space: nowrap; font-size: 12.5px; }
+    .state-row td { text-align: center; color: var(--sub); padding: 32px; }
+    .cell-user, .cell-room { display: flex; align-items: center; gap: 10px; }
+    .cell-name { font-weight: 600; }
+    .avatar { width: 32px; height: 32px; border-radius: 4px; background: var(--primary-light); color: var(--primary); display: flex; align-items: center;
+              justify-content: center; font-size: 12px; font-weight: 700; overflow: hidden; flex-shrink: 0; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar.sm { width: 28px; height: 28px; font-size: 11px; }
+    .room-emoji { font-size: 18px; }
+    .code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--grey-bg); padding: 2px 7px; border-radius: 4px; }
+    .trunc { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 4px; white-space: nowrap; }
+    .pill-green { background: var(--green-bg); color: var(--green); }
+    .pill-red { background: var(--red-bg); color: var(--red); }
+    .pill-amber { background: var(--amber-bg); color: var(--amber); }
+    .pill-blue { background: var(--blue-bg); color: var(--blue); }
+    .pill-grey { background: var(--grey-bg); color: var(--sub); }
+    .pill-purple { background: var(--primary-light); color: var(--primary); }
+
+    /* ── Toolbar / chips / inputs ── */
+    .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 18px; border-bottom: 1px solid var(--border-soft); }
+    .search { display: flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); min-width: 230px; }
+    .search input { border: none; outline: none; font-size: 13px; width: 100%; background: none; font-family: inherit; }
+    .search:focus-within { border-color: var(--primary); }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip { padding: 5px 12px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; font-weight: 600; color: var(--sub); }
+    .chip:hover { border-color: var(--primary); color: var(--primary); }
+    .chip.on { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+    select.sel { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); font-size: 12.5px; font-weight: 600; font-family: inherit; }
+    .count-note { font-size: 12px; color: var(--sub); margin-left: auto; }
+
+    /* ── Banners / callouts ── */
+    .banner { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-radius: 4px; border: 1px solid; }
+    .banner.ok { background: #F0FDF4; border-color: #BBF7D0; }
+    .banner.bad { background: #FEF2F2; border-color: #FECACA; }
+    .banner.warn { background: #FFFBEB; border-color: #FDE68A; }
+    .banner-title { font-weight: 700; font-size: 15px; }
+    .banner-sub { font-size: 12.5px; color: var(--sub); }
+    .banner .dot { width: 12px; height: 12px; }
+    .callout { padding: 22px; border-radius: 4px; background: var(--surface); border: 1.5px dashed var(--border); text-align: center; color: var(--sub); }
+    .callout h3 { color: var(--text); font-size: 15px; margin-bottom: 6px; }
+    .callout ol { text-align: left; display: inline-block; margin-top: 12px; font-size: 13px; padding-left: 18px; }
+    .callout ol li { margin-bottom: 4px; }
+
+    /* ── Progress / bars ── */
+    .bar { height: 8px; border-radius: 4px; background: var(--grey-bg); overflow: hidden; display: flex; }
+    .bar > span { display: block; height: 100%; }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; }
+    .bar-row .lbl { width: 130px; font-weight: 600; flex-shrink: 0; }
+    .bar-row .bar { flex: 1; }
+    .bar-row .val { width: 60px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .delta { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .delta.up { background: var(--green-bg); color: var(--green); }
+    .delta.down { background: var(--red-bg); color: var(--red); }
+    .delta.flat { background: var(--grey-bg); color: var(--sub); }
+
+    /* ── Charts ── */
+    .chart-card { padding: 16px 18px 12px; position: relative; }
+    .chart-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+    .chart-title { font-weight: 800; font-size: 15px; }
+    .chart-now { margin-left: auto; font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
+    .chart-legend { display: flex; gap: 14px; margin-top: 6px; flex-wrap: wrap; font-size: 12px; color: var(--sub); }
+    .chart-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 4px; margin-right: 5px; vertical-align: -1px; }
+    .chart-tip { position: absolute; display: none; background: #1C1B1F; color: #fff; border-radius: 4px; padding: 8px 12px; font-size: 12px; pointer-events: none;
+                 white-space: nowrap; z-index: 20; line-height: 1.7; }
+    .chart-empty { height: 150px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+
+    /* ── Log terminal ── */
+    .term { background: #0F0E1F; color: #D7D5F0; border-radius: 4px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px;
+            line-height: 1.65; height: 560px; overflow-y: auto; padding: 12px 0; }
+    .term.short { height: 380px; }
+    .log-line { display: flex; gap: 12px; padding: 1px 16px; }
+    .log-line:hover { background: rgba(255,255,255,.04); }
+    .log-ts { color: #6F6C9A; flex-shrink: 0; }
+    .log-lvl { flex-shrink: 0; width: 54px; font-weight: 700; }
+    .log-lvl.INFO { color: #60A5FA; } .log-lvl.WARN, .log-lvl.WARNING { color: #FBBF24; }
+    .log-lvl.ERROR, .log-lvl.ERR, .log-lvl.CRITICAL { color: #F87171; } .log-lvl.DEBUG { color: #9CA3AF; }
+    .log-msg { white-space: pre-wrap; word-break: break-word; }
+    .log-line.is-error .log-msg { color: #FCA5A5; }
+    .term-empty { padding: 40px; text-align: center; color: #6F6C9A; }
+
+    /* ── Connections map ── */
+    .flow { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; padding: 22px 12px; }
+    .node { padding: 12px 16px; border-radius: 4px; background: #FAFAFE; border: 1.5px solid var(--border); min-width: 130px; text-align: center; }
+    .node b { display: block; font-size: 13px; }
+    .node small { color: var(--sub); font-size: 11.5px; }
+    .node.ok { border-color: #86EFAC; background: #F0FDF4; } .node.down { border-color: #FCA5A5; background: #FEF2F2; }
+    .node.degraded, .node.unknown { border-color: #FCD34D; background: #FFFBEB; }
+    .arrow { color: var(--muted); font-size: 18px; }
+    .svc { padding: 16px 18px; display: flex; gap: 12px; align-items: flex-start; }
+    .svc-name { font-weight: 700; }
+    .svc-detail { font-size: 12.5px; color: var(--sub); margin-top: 2px; word-break: break-word; }
+    .svc-lat { margin-left: auto; font-size: 12px; color: var(--sub); white-space: nowrap; }
+
+    /* ── Drawer ── */
+    #drawerOverlay { position: fixed; inset: 0; background: rgba(23,21,51,.35); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 200; }
+    #drawerOverlay.show { opacity: 1; pointer-events: auto; }
+    #drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 440px; max-width: 100vw; background: var(--surface); z-index: 210; transform: translateX(100%);
+              transition: transform .25s ease; overflow-y: auto; }
+    #drawer.open { transform: none; }
+    .drawer-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border-soft); position: sticky; top: 0; background: var(--surface); }
+    .drawer-body { padding: 20px; }
+    .close-btn { border: none; background: var(--grey-bg); border-radius: 4px; padding: 6px; display: flex; }
+    .d-header { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+    .d-avatar { width: 56px; height: 56px; border-radius: 4px; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; overflow: hidden; }
+    .d-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .d-emoji-box { width: 56px; height: 56px; border-radius: 4px; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .d-name { font-weight: 800; font-size: 17px; letter-spacing: -.3px; }
+    .d-sub { font-size: 12.5px; color: var(--sub); }
+    .d-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+    .d-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .d-stat { background: #FAFAFE; border-radius: 4px; padding: 12px 14px; }
+    .d-stat-val { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+    .d-stat-label { font-size: 12px; color: var(--sub); }
+    .d-section-label { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--sub); margin: 18px 0 8px; }
+    .d-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 4px; cursor: pointer; }
+    .d-row:hover { background: #FAFAFF; }
+    .d-row-info { flex: 1; min-width: 0; }
+    .d-row-name { font-weight: 600; font-size: 13.5px; }
+    .d-row-sub { font-size: 12px; color: var(--sub); }
+    .d-empty, .d-state { color: var(--sub); padding: 24px 0; text-align: center; }
+    .d-state.err { color: var(--red); }
+    .kv { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; font-size: 13px; }
+    .kv dt { color: var(--sub); } .kv dd { word-break: break-all; }
+    pre.json { background: #0F0E1F; color: #D7D5F0; padding: 14px; border-radius: 4px; font-size: 12px; overflow-x: auto; margin-top: 8px; }
+
+    /* ── Toasts ── */
+    #toasts { position: fixed; right: 18px; bottom: 18px; z-index: 400; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: #1C1B1F; color: #fff; padding: 10px 14px; border-radius: 4px; font-size: 13px; max-width: 340px; }
+    .toast.err { background: var(--red); }
+
+
+    /* ── Section tabs ── */
+    .tabs { display: flex; gap: 4px; padding: 0 28px; border-bottom: 1px solid var(--border); background: var(--bg); overflow-x: auto; position: sticky; top: 71px; z-index: 40; }
+    .tab { padding: 11px 14px 10px; font-size: 13.5px; font-weight: 600; color: var(--sub); text-decoration: none; border-bottom: 2.5px solid transparent; white-space: nowrap; }
+    .tab:hover { color: var(--text); }
+    .tab.on { color: var(--primary); border-bottom-color: var(--primary); }
+    .nav-badge.warn { background: #F59E0B; color: #fff; }
+    .btn.sm { padding: 4px 10px; font-size: 12px; text-decoration: none; }
+
+    /* ── Needs attention ── */
+    .attn { display: flex; flex-direction: column; gap: 8px; }
+    .attn-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--surface); border-radius: 4px; text-decoration: none; color: inherit; border: 1px solid var(--border-soft); }
+    .attn-row:hover { border-color: var(--primary); }
+    .attn-title { font-weight: 700; font-size: 14px; }
+    .attn-sub { font-size: 12.5px; color: var(--sub); }
+    .attn-cta { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+
+    /* ── Funnel ── */
+    .fun-row { display: grid; grid-template-columns: 170px 1fr 70px 120px; gap: 14px; align-items: center; margin-bottom: 12px; font-size: 13px; }
+    .fun-lbl { font-weight: 600; } .fun-bar { height: 12px; } .fun-val { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .fun-pct { color: var(--sub); font-size: 12px; }
+    .fun-note { margin-top: 6px; padding: 10px 14px; background: var(--primary-light); border-radius: 4px; font-size: 13px; color: var(--primary-dark); }
+
+    /* ── Service cards ── */
+    .svc-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .svc-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; border-top: 3px solid #22C55E; }
+    .svc-card.is-down { border-top-color: #EF4444; } .svc-card.is-degraded, .svc-card.is-unknown { border-top-color: #F59E0B; }
+    .svc-top { display: flex; align-items: center; gap: 10px; }
+    .svc-prov { font-size: 12px; color: var(--sub); }
+    .svc-role { font-size: 12.5px; color: var(--muted); }
+    .svc-vitals { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12.5px; padding: 10px 12px; background: #FAFAFE; border-radius: 4px; }
+    .svc-vitals dt { color: var(--sub); } .svc-vitals dd { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+    .svc-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; }
+    .svc-foot .svc-lat { margin-left: auto; }
+    .svc-hist { display: flex; gap: 2px; }
+    .svc-hist i { width: 5px; height: 14px; border-radius: 4px; background: #22C55E; display: block; }
+    .svc-hist i.bad { background: #EF4444; } .svc-hist i.warn { background: #F59E0B; }
+
+    /* ── Revenue ── */
+    .rev-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .log-src { flex-shrink: 0; width: 96px; font-weight: 700; color: #A78BFA; }
+    .log-src.s-api { color: #60A5FA; } .log-src.s-video { color: #F472B6; }
+
+    @media (max-width: 860px) {
+      .tabs { padding: 0 16px; top: 63px; }
+      .fun-row { grid-template-columns: 1fr 60px; } .fun-bar, .fun-pct { grid-column: 1 / -1; }
+    }
+    .skeleton { background: linear-gradient(90deg, #EEEDF6 25%, #F7F6FC 50%, #EEEDF6 75%); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 4px; }
+    @keyframes sk { to { background-position: -200% 0; } }
+
+    @media (max-width: 1100px) { .g-4 { grid-template-columns: repeat(2, 1fr); } .g-3 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 860px) {
+      .sidebar { transform: translateX(-100%); }
+      body.nav-open .sidebar { transform: none; }
+      .main { margin-left: 0; }
+      .menu-btn { display: flex; }
+      .topbar, .content { padding-left: 16px; padding-right: 16px; }
+      .g-2, .g-3, .g-4 { grid-template-columns: 1fr; }
+      .updated { display: none; }
+    }
+  
+    /* Same look as /admin: white on light grey, square corners, Dark toggle remembered. */
+    :root {
+      color-scheme: light;
+      --primary: #111827; --primary-dark: #000000; --primary-light: #F3F4F6; --accent: #6B7280; --on-primary: #FFFFFF;
+      --bg: #F5F5F5; --surface: #FFFFFF; --text: #111827; --sub: #6B7280; --muted: #9CA3AF;
+      --border: #E5E7EB; --border-soft: #F0F0F0;
+      --side: #FFFFFF; --side-2: #F3F4F6; --side-text: #4B5563; --side-dim: #9CA3AF;
+      --radius: 4px; --shadow: none;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --primary: #F3F4F6; --primary-dark: #FFFFFF; --primary-light: #262626; --accent: #A3A3A3; --on-primary: #111111;
+      --bg: #0A0A0A; --surface: #161616; --text: #F3F4F6; --sub: #A3A3A3; --muted: #737373;
+      --border: #2A2A2A; --border-soft: #222222;
+      --side: #161616; --side-2: #222222; --side-text: #A3A3A3; --side-dim: #737373;
+      --green: #34D399; --green-bg: #0B2A20; --red: #F87171; --red-bg: #2E1213;
+      --amber: #FBBF24; --amber-bg: #2B2008; --blue: #93C5FD; --blue-bg: #13213A; --grey-bg: #262626;
+    }
+    .sidebar { border-right: 1px solid var(--border); }
+    .side-foot { border-top-color: var(--border); }
+    .foot-btn { border-color: var(--border) !important; color: var(--side-text) !important; }
+    body { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div id="gate" class="hidden"></div>
+
+<!-- ═════════ App ═════════ -->
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-top">
+      <a href="/admin/" class="brand"><div class="brand-mark"><i data-lucide="camera"></i></div><span class="brand-name">Rollout</span></a>
+      <div class="side-tag">Ops</div>
+    </div>
+    <nav class="side-nav" id="sideNav"></nav>
+    <div class="side-foot">
+      <div class="foot-row"><span class="dot" id="footDot"></span><span id="footWorker">Worker…</span></div>
+      <div class="foot-row"><i data-lucide="cpu"></i><span>Engine: <b id="footEngine">—</b></span></div>
+      <button class="foot-btn" id="logoutBtn"><i data-lucide="log-out"></i> Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn"><i data-lucide="menu"></i></button>
+      <div>
+        <div class="page-title" id="pageTitle"></div>
+        <div class="page-sub" id="pageSub"></div>
+      </div>
+      <div class="top-actions">
+        <label class="toggle" id="autoWrap"><input type="checkbox" id="autoToggle" checked /> Auto-refresh</label>
+        <span class="updated" id="updated"></span>
+        <button class="btn" id="themeBtn" type="button">Dark</button>
+        <button class="btn" id="refreshBtn"><i data-lucide="refresh-cw"></i> Refresh</button>
+      </div>
+    </header>
+    <nav class="tabs" id="tabs"></nav>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<div id="drawerOverlay"></div>
+<aside id="drawer"><div class="drawer-top"><b>Details</b><button class="close-btn" id="drawerClose"><i data-lucide="x"></i></button></div><div class="drawer-body" id="drawerBody"></div></aside>
+<div id="toasts"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   Rollout Control Center
+   One page per section, hash-routed (#/worker, #/users …). Each page is a function
+   that draws into #content and registers its own refresh timers, which are torn down
+   on navigation so nothing keeps polling in the background.
+   ════════════════════════════════════════════════════════════════════════════ */
+// Lives on the website; talks to the backend picked on /admin/ (the choice and sign-in are shared).
+const SERVERS = {
+  stage: { label: 'Stage', base: 'https://groupsnap-backend-stage.up.railway.app' },
+  production: { label: 'Production', base: 'https://api.rollouts.in' },
+};
+// Only when the page is opened from this computer, to try it against a local backend.
+if (['localhost', '127.0.0.1'].includes(location.hostname)) SERVERS.local = { label: 'Local', base: 'http://localhost:8077' };
+let SERVER = 'stage';
+try { const saved = localStorage.getItem('rollout_admin_server'); if (SERVERS[saved]) SERVER = saved; } catch {}
+const BASE = SERVERS[SERVER].base;
+const TOKEN_KEY = `rollout_admin_token_${SERVER}`;
+let TOKEN = '';
+let sideCounts = {};
+
+/* ── helpers ── */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+const fmt = n => (n === null || n === undefined || Number.isNaN(n)) ? '—' : Number(n).toLocaleString();
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const fmtDT = d => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '—';
+const clock = d => d ? new Date(d).toLocaleTimeString('en-US', { hour12: false }) : '';
+function ago(d) {
+  if (!d) return '—';
+  const s = Math.max(0, (Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return `${Math.round(s)}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  return `${Math.round(s / 86400)}d ago`;
+}
+function dur(sec) {
+  if (sec === null || sec === undefined) return '—';
+  if (sec < 60) return `${sec.toFixed(1)}s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ${Math.round(sec % 60)}s`;
+  return `${Math.floor(sec / 3600)}h ${Math.round((sec % 3600) / 60)}m`;
+}
+const initials = n => (n || '?').split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || '?';
+const avatar = (u, cls = '') => { const src = u.face_crop_uri || u.avatar_url;
+  return `<div class="avatar ${cls}">${src ? `<img src="${esc(src)}" alt="">` : initials(u.name)}</div>`; };
+const userName = u => u.name ? esc(u.name) : (u.device_id ? `<span class="mono" style="font-size:12px;color:var(--sub)">${esc(u.device_id.slice(-10))}</span>` : 'User');
+const icons = () => window.lucide && lucide.createIcons();
+
+async function api(path, opts = {}) {
+  const res = await fetch(BASE + path, { ...opts, headers: { Authorization: `Bearer ${TOKEN}`, ...(opts.headers || {}) } });
+  if (res.status === 401) { lock(); throw new Error('401'); }
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+function toast(msg, err = false) {
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), 4200);
+}
+const loading = rows => `<div class="grid" style="gap:12px">${Array.from({ length: rows || 3 }, () => '<div class="skeleton" style="height:78px"></div>').join('')}</div>`;
+
+/* ── components ── */
+function kpi(label, value, sub, icon, tone = '') {
+  return `<div class="card kpi"><div class="kpi-top"><span>${label}</span><div class="kpi-ico ${tone}"><i data-lucide="${icon}"></i></div></div>
+    <div class="kpi-val">${value}</div><div class="kpi-sub">${sub || '&nbsp;'}</div></div>`;
+}
+function panel(title, body, { sub = '', actions = '', flush = false, id = '' } = {}) {
+  return `<section class="card panel" ${id ? `id="${id}"` : ''}><div class="panel-head"><div><div class="panel-title">${title}</div>${sub ? `<div class="panel-sub">${sub}</div>` : ''}</div>
+    <div class="panel-actions">${actions}</div></div><div class="panel-body ${flush ? 'flush' : ''}">${body}</div></section>`;
+}
+const pill = (text, tone = 'grey', icon = '') => `<span class="pill pill-${tone}">${icon ? `<i data-lucide="${icon}" style="width:12px;height:12px"></i>` : ''}${text}</span>`;
+const jobPill = s => pill(s, { done: 'green', failed: 'red', processing: 'blue', pending: 'amber' }[s] || 'grey');
+function deltaChip(curr, prev) {
+  if (!prev) return '';
+  const pct = Math.round(((curr - prev) / prev) * 100);
+  if (pct > 0) return `<span class="delta up"><i data-lucide="trending-up" style="width:12px;height:12px"></i>+${pct}%</span>`;
+  if (pct < 0) return `<span class="delta down"><i data-lucide="trending-down" style="width:12px;height:12px"></i>${pct}%</span>`;
+  return `<span class="delta flat">flat</span>`;
+}
+const searchBox = (id, ph) => `<label class="search"><i data-lucide="search"></i><input id="${id}" placeholder="${ph}" autocomplete="off"></label>`;
+function chipRow(id, opts, current) {
+  return `<div class="chips" id="${id}">${opts.map(([v, l]) => `<button class="chip ${v === current ? 'on' : ''}" data-v="${v}">${l}</button>`).join('')}</div>`;
+}
+function wireChips(id, cb) {
+  const el = $('#' + id); if (!el) return;
+  el.addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return;
+    el.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === b)); cb(b.dataset.v); });
+}
+const notConfigured = (title, steps) => `<div class="callout"><h3>${title}</h3><ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol></div>`;
+
+/* ── line chart (SVG, hover tooltip) ── */
+function lineChart(el, { series, height = 170, fmtY = v => v.toFixed(1), unit = '', fixedMax = null, dateAxis = false }) {
+  const pts = series.flatMap(s => s.data);
+  if (!pts.length) { el.innerHTML = '<div class="chart-empty">No data for this range</div>'; return; }
+  const W = 720, H = height, L = 46, R = 10, T = 10, B = 24;
+  const xs = pts.map(p => p[0]), x0 = Math.min(...xs), x1 = Math.max(...xs);
+  let yMax = fixedMax ?? Math.max(...pts.map(p => p[1]), 0.0001) * 1.15;
+  const X = t => L + ((t - x0) / Math.max(x1 - x0, 1)) * (W - L - R);
+  const Y = v => T + (1 - v / yMax) * (H - T - B);
+  const grid = [0, .25, .5, .75, 1].map(f => {
+    const y = T + f * (H - T - B);
+    return `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#EEEDF6"/><text x="${L - 6}" y="${y + 4}" text-anchor="end" font-size="10.5" fill="#9CA3AF">${fmtY(yMax * (1 - f))}</text>`;
+  }).join('');
+  const xt = [0, .25, .5, .75, 1].map(f => {
+    const t = x0 + f * (x1 - x0), d = new Date(t * 1000);
+    const lbl = dateAxis ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `<text x="${X(t)}" y="${H - 6}" text-anchor="${f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}" font-size="10.5" fill="#9CA3AF">${lbl}</text>`;
+  }).join('');
+  const paths = series.map(s => {
+    if (!s.data.length) return '';
+    const line = s.data.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' ');
+    const area = `M ${s.data.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' L ')} L ${X(s.data[s.data.length - 1][0])},${H - B} L ${X(s.data[0][0])},${H - B} Z`;
+    return `<path d="${area}" fill="${s.color}" opacity="${series.length > 1 ? .06 : .1}"/><polyline points="${line}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }).join('');
+  el.style.position = 'relative';
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;cursor:crosshair">${grid}${xt}${paths}
+    <line class="cx" y1="${T}" y2="${H - B}" stroke="#9CA3AF" stroke-dasharray="3 3" display="none"/></svg><div class="chart-tip"></div>`;
+  const svg = $('svg', el), tip = $('.chart-tip', el), cx = $('.cx', el);
+  svg.addEventListener('mousemove', e => {
+    const r = svg.getBoundingClientRect(), t = x0 + (((e.clientX - r.left) / r.width * W - L) / (W - L - R)) * (x1 - x0);
+    const rows = series.map(s => { if (!s.data.length) return null;
+      const p = s.data.reduce((a, b) => Math.abs(b[0] - t) < Math.abs(a[0] - t) ? b : a); return { s, p }; }).filter(Boolean);
+    if (!rows.length) return;
+    const px = X(rows[0].p[0]); cx.setAttribute('x1', px); cx.setAttribute('x2', px); cx.removeAttribute('display');
+    tip.innerHTML = `<div style="opacity:.6;font-size:11px">${new Date(rows[0].p[0] * 1000).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}</div>` +
+      rows.map(({ s, p }) => `<div><span style="color:${s.color}">●</span> ${esc(s.name)} <b>${fmtY(p[1])}${unit}</b></div>`).join('');
+    const box = el.getBoundingClientRect(), left = e.clientX - box.left + 14;
+    tip.style.left = (left + 170 > box.width ? left - 190 : left) + 'px'; tip.style.top = (e.clientY - box.top - 20) + 'px'; tip.style.display = 'block';
+  });
+  svg.addEventListener('mouseleave', () => { tip.style.display = 'none'; cx.setAttribute('display', 'none'); });
+}
+function chartCard(id, title, series, opts = {}) {
+  const last = series[0] && series[0].data.length ? series[0].data[series[0].data.length - 1][1] : null;
+  const f = opts.fmtY || (v => v.toFixed(1));
+  return `<div class="card chart-card"><div class="chart-head"><span class="chart-title">${title}</span>
+    <span class="chart-now">${last === null ? '—' : f(last) + (opts.unit || '')}</span></div><div id="${id}"></div>
+    <div class="chart-legend">${series.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div></div>`;
+}
+function drawCharts(defs) { defs.forEach(d => { const el = $('#' + d.id); if (el) lineChart(el, d); }); }
+
+/* ── timers (torn down on navigation) ── */
+let timers = [], lastRefreshFn = null;
+function every(fn, ms, { onlyAuto = true } = {}) {
+  const id = setInterval(() => { if (document.hidden) return; if (onlyAuto && !$('#autoToggle').checked) return; fn(); }, ms);
+  timers.push(id);
+}
+const stamp = () => { $('#updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' }); };
+
+/* ── drawer ── */
+function openDrawer(html) { $('#drawerBody').innerHTML = html; $('#drawer').classList.add('open'); $('#drawerOverlay').classList.add('show'); icons(); }
+function closeDrawer() { $('#drawer').classList.remove('open'); $('#drawerOverlay').classList.remove('show'); }
+
+async function openUser(id) {
+  openDrawer('<div class="d-state">Loading…</div>');
+  try {
+    const u = await api(`/dashboard/users/${id}`);
+    const rooms = (u.rooms || []).length ? u.rooms.map(r => `<div class="d-row" data-room="${esc(r.id)}">
+      <div class="d-row-info"><div class="d-row-name">${esc(r.name || 'Unnamed')}</div><div class="d-row-sub">${fmt(r.photo_count)} photos · joined ${fmtDate(r.joined_at)}</div></div>
+      <i data-lucide="chevron-right"></i></div>`).join('') : '<div class="d-empty">No rooms joined yet.</div>';
+    const src = u.face_crop_uri || u.avatar_url;
+    openDrawer(`<div class="d-header"><div class="d-avatar">${src ? `<img src="${esc(src)}" alt="">` : initials(u.name)}</div>
+      <div><div class="d-name">${esc(u.name || 'User')}</div>${u.device_id ? `<div class="d-sub mono">${esc(u.device_id)}</div>` : ''}<div class="d-sub">Signed up ${fmtDate(u.created_at)}</div></div></div>
+      <div class="d-badges">${u.face_registered ? pill('Face registered', 'green') : pill('No face registered')}</div>
+      <div class="d-section-label">Rooms (${(u.rooms || []).length})</div>${rooms}`);
+    document.querySelectorAll('.d-row[data-room]').forEach(el => el.addEventListener('click', () => openRoom(el.dataset.room)));
+  } catch { openDrawer('<div class="d-state err">Failed to load user.</div>'); }
+}
+async function openRoom(id) {
+  openDrawer('<div class="d-state">Loading…</div>');
+  try {
+    const r = await api(`/dashboard/rooms/${id}`);
+    const members = (r.members || []).length ? r.members.map(m => `<div class="d-row" data-user="${esc(m.id)}">${avatar(m, 'sm')}
+      <div class="d-row-info"><div class="d-row-name">${esc(m.name || 'User')}</div><div class="d-row-sub">${m.face_registered ? 'Face registered' : 'No face'} · joined ${fmtDate(m.joined_at)}</div></div>
+      <i data-lucide="chevron-right"></i></div>`).join('') : '<div class="d-empty">No members yet.</div>';
+    openDrawer(`<div class="d-header"><div><div class="d-name">${esc(r.name || 'Unnamed')}</div>
+      <div class="d-sub"><span class="code">${esc(r.code || '—')}</span></div></div></div>
+      <div class="d-stats"><div class="d-stat"><div class="d-stat-val">${fmt(r.photo_count)}</div><div class="d-stat-label">Photos</div></div>
+      <div class="d-stat"><div class="d-stat-val">${fmt((r.members || []).length)}</div><div class="d-stat-label">Members</div></div></div>
+      <div class="d-section-label">Members (${(r.members || []).length})</div>${members}`);
+    document.querySelectorAll('.d-row[data-user]').forEach(el => el.addEventListener('click', () => openUser(el.dataset.user)));
+  } catch { openDrawer('<div class="d-state err">Failed to load room.</div>'); }
+}
+function openJob(j) {
+  const d = j.claimed_at && j.done_at ? (new Date(j.done_at) - new Date(j.claimed_at)) / 1000 : null;
+  openDrawer(`<div class="d-header"><div class="d-emoji-box" style="font-size:22px"><i data-lucide="${j.job_type === 'register_face' ? 'scan-face' : 'image'}"></i></div>
+    <div><div class="d-name">${esc(j.job_type)}</div><div class="d-sub">${jobPill(j.status)}</div></div></div>
+    ${j.error ? `<div class="banner bad" style="margin-bottom:16px"><div><div class="banner-title" style="font-size:13px">Error</div><div class="banner-sub mono" style="color:var(--red)">${esc(j.error)}</div></div></div>` : ''}
+    <dl class="kv"><dt>Job ID</dt><dd class="mono">${esc(j.id)}</dd><dt>Created</dt><dd>${fmtDT(j.created_at)}</dd>
+      <dt>Claimed</dt><dd>${fmtDT(j.claimed_at)}</dd><dt>Finished</dt><dd>${fmtDT(j.done_at)}</dd><dt>Duration</dt><dd>${dur(d)}</dd>
+      ${j.photo_id ? `<dt>Photo</dt><dd class="mono">${esc(j.photo_id)}</dd>` : ''}${j.room_id ? `<dt>Room</dt><dd class="mono">${esc(j.room_id)}</dd>` : ''}
+      ${j.user_id ? `<dt>User</dt><dd class="mono">${esc(j.user_id)}</dd>` : ''}</dl>
+    ${j.room_id ? `<button class="btn" style="margin-top:16px" onclick="openRoom('${esc(j.room_id)}')"><i data-lucide="door-open"></i> Open room</button>` : ''}
+    ${j.user_id ? `<button class="btn" style="margin-top:16px" onclick="openUser('${esc(j.user_id)}')"><i data-lucide="user"></i> Open user</button>` : ''}
+    <div class="d-section-label">Raw</div><pre class="json">${esc(JSON.stringify(j, null, 2))}</pre>`);
+}
+
+/* ═══════════════════════════ PAGES ═══════════════════════════ */
+
+/* ── Services snapshot, shared by Overview, Services and the sidebar ── */
+const svcHistory = {};   // service id -> this session's checks, oldest first
+let svcLast = null;
+const stateTone = s => s === 'ok' ? 'ok' : s === 'down' ? 'bad' : 'warn';
+const stateLabel = s => ({ ok: 'Operational', down: 'Down', degraded: 'Degraded', unknown: 'Unknown' }[s] || s);
+const statePill = s => pill(stateLabel(s), { ok: 'green', down: 'red' }[s] || 'amber');
+async function loadServices() {
+  let d;
+  try { d = await api('/dashboard/ops/services'); }
+  catch (e) {
+    if (String(e.message) !== '404') throw e;
+    // Backend not redeployed yet: build the same shape from the older /status.
+    const s = await api('/dashboard/ops/status');
+    d = { checked_at: s.checked_at, config: s.config, legacy: true, services: s.checks.map((c, i) => ({ id: 'c' + i, name: c.name, role: '', provider: '',
+      state: c.state, detail: c.detail, vitals: [], logs: null, latency_ms: c.latency_ms })) };
+  }
+  d.services.forEach(s => { const h = svcHistory[s.id] = svcHistory[s.id] || []; h.push({ state: s.state, at: Date.now() }); if (h.length > 30) h.shift(); });
+  svcLast = d; sideCounts.svcBad = d.services.filter(s => s.state === 'down').length;
+  sideCounts.svcWarn = d.services.filter(s => s.state !== 'ok' && s.state !== 'down').length; renderNav();
+  return d;
+}
+
+/* ── Overview ── */
+const SEC_TINT = { 'Needs attention': ['#FDEEEE', '#F3C6C6'], 'All clear': ['#ECFAF3', '#BDE9D2'], 'This week': ['#ECFAF3', '#BDE9D2'], 'Where users drop off': ['#EEF6FD', '#BFDDF3'],
+  'Last 30 days': ['#F3EEFD', '#D9C9F3'], Today: ['#FFF6E6', '#F5DDAA'], Totals: ['#EEF0FF', '#C9CEFA'], 'Health and other': ['#FDEEEE', '#F3C6C6'] };
+const secHead = (title, sub, ico) => { const [bg, bd] = SEC_TINT[title] || ['#F4F4FB', '#E6E4EF'];
+  return `<section class="sec" style="background:${bg};border-color:${bd}"><div class="sec-head"><div class="kpi-ico" style="background:#fff"><i data-lucide="${ico}"></i></div>
+  <div><div class="sec-title">${title}</div><div class="page-sub">${sub}</div></div></div>`; };
+const rupees = n => '₹' + fmt(Math.round(n || 0));
+
+async function pageOverview(root) {
+  root.innerHTML = loading(4);
+  const [ov, ins, growth, wk, svc, rev] = await Promise.all([
+    api('/dashboard/overview'), api('/dashboard/insights'),
+    api('/dashboard/deployments/growth').catch(() => ({ days: [] })),
+    api('/dashboard/ops/worker').catch(() => null),
+    loadServices().catch(() => null),
+    api('/dashboard/ops/revenue').catch(() => null),
+  ]);
+  const a = ins.activity_24h || {}, g = ins.growth || {}, h = ins.health || {}, f = ins.funnel || {};
+  const days = growth.days || [];
+  const ser = (key, name, color) => [{ name, color, data: days.map(d => [Math.floor(new Date(d.date).getTime() / 1000), d[key] || 0]) }];
+  const faces = wk ? wk.data.users_with_embedding : ov.faces_registered;
+  const q = wk ? wk.queue : null, t = wk ? wk.throughput : null;
+  const sum30 = k => days.reduce((s, d) => s + (d[k] || 0), 0);
+  const thumb = Math.round((h.thumb_failure_rate || 0) * 100), thumb7 = Math.round((h.thumb_failure_rate_7d || 0) * 100);
+
+  // Live revenue only. Sandbox purchases are store tests, not money.
+  const D = 864e5, now = Date.now();
+  const livePaid = rev ? (rev.purchases || []).filter(p => p.env === 'live' && !p.refunded_at) : [];
+  const revIn = (from, to) => livePaid.filter(p => { const x = new Date(p.created_at).getTime(); return x >= from && x < to; }).reduce((s, p) => s + (p.amount_inr || 0), 0);
+  const rev7 = revIn(now - 7 * D, now), revPrev7 = revIn(now - 14 * D, now - 7 * D);
+
+  /* What needs a decision right now, worst first */
+  const issues = [];
+  if (svc) svc.services.filter(s => s.state !== 'ok').forEach(s => issues.push({ tone: s.state === 'down' ? 'bad' : 'warn',
+    title: `${s.name} is ${stateLabel(s.state).toLowerCase()}`, sub: s.detail, href: '#/services', cta: 'Services' }));
+  if (t && t.failed_24h) issues.push({ tone: t.failed_24h > 10 ? 'bad' : 'warn', title: `${fmt(t.failed_24h)} face jobs failed in the last 24h`,
+    sub: 'Those photos will not show up in face search', href: '#/services/jobs', cta: 'Job queue' });
+  const faceSvcFlagged = svc && svc.services.some(s => s.id === 'face_worker' && s.state !== 'ok');
+  if (t && t.backlog_age_seconds > 900 && !faceSvcFlagged) issues.push({ tone: 'warn', title: 'Face queue is backed up',
+    sub: `Oldest job has waited ${dur(t.backlog_age_seconds)} · ${fmt(q.pending + q.processing)} left · about ${t.eta_minutes} min to clear`, href: '#/services/worker', cta: 'Face worker' });
+  if ((h.errors_7d || 0) > 5 && (h.errors_7d || 0) > (h.errors_prev_7d || 0) * 1.5) issues.push({ tone: 'warn',
+    title: `API errors are up: ${fmt(h.errors_7d)} this week, ${fmt(h.errors_prev_7d || 0)} last week`, sub: 'See which endpoints are failing', href: '#/logs', cta: 'Logs' });
+  if (thumb7 > 5) issues.push({ tone: thumb7 > 15 ? 'bad' : 'warn', title: `${thumb7}% of this week's photos have no thumbnail`, sub: 'They load slowly in the app', href: '#/logs/api', cta: 'API logs' });
+  if (g.users_prev_7d >= 10 && g.users_7d < g.users_prev_7d * 0.7) issues.push({ tone: 'warn',
+    title: `Sign-ups fell ${Math.round((1 - g.users_7d / g.users_prev_7d) * 100)}% week on week`, sub: `${fmt(g.users_7d)} this week against ${fmt(g.users_prev_7d)} last week`, href: '#/overview/users', cta: 'Users' });
+  if (rev && rev.awaiting_payment) issues.push({ tone: 'info', title: `${fmt(rev.awaiting_payment)} paid room${rev.awaiting_payment > 1 ? 's' : ''} waiting on a payment`,
+    sub: 'UPI or Ask to Buy not approved yet. They turn into real rooms when the money lands', href: '#/revenue', cta: 'Revenue' });
+  issues.sort((x, y) => ({ bad: 0, warn: 1, info: 2 }[x.tone] - { bad: 0, warn: 1, info: 2 }[y.tone]));
+  const attention = issues.length ? `${secHead('Needs attention', `${issues.length} thing${issues.length > 1 ? 's' : ''} worth a look, worst first`, 'siren')}
+    <div class="attn">${issues.map(i => `<a class="attn-row" href="${i.href}"><span class="dot ${i.tone === 'info' ? '' : i.tone}" ${i.tone === 'info' ? 'style="background:var(--blue)"' : ''}></span>
+      <div style="min-width:0"><div class="attn-title">${esc(i.title)}</div><div class="attn-sub">${esc(i.sub)}</div></div><span class="attn-cta">${i.cta} →</span></a>`).join('')}</div></section>`
+    : `${secHead('All clear', svc ? `${svc.services.length} services operational, no failed jobs, errors steady` : 'Nothing is flagged right now', 'check-circle')}</section>`;
+
+  /* Week on week */
+  const weekCard = (label, c, p, fmtV = fmt) => `<div class="card kpi"><div class="kpi-top"><span>${label}</span></div>
+    <div class="kpi-val">${fmtV(c)}</div><div class="kpi-sub">Previous 7 days ${fmtV(p)} &nbsp;${deltaChip(c, p)}</div></div>`;
+
+  /* Funnel: where people stop */
+  // Face registration can happen before or after joining, so it is not a funnel step: it is shown against sign-ups.
+  const steps = [['Signed up', f.signed_up], ['Joined a room', f.joined_room], ['Uploaded a photo', f.uploaded_photo]];
+  const faceReg = f.registered_face ?? faces;
+  const top = steps[0][1] || 1;
+  let worst = null;
+  steps.forEach((s, i) => { if (!i) return; const prev = steps[i - 1][1] || 0, conv = prev ? s[1] / prev : 0;
+    if (prev && (!worst || conv < worst.conv)) worst = { from: steps[i - 1][0], to: s[0], conv }; });
+  const funnel = steps.map((s, i) => { const pct = Math.round((s[1] || 0) / top * 100), prev = i ? steps[i - 1][1] : null;
+    return `<div class="fun-row"><span class="fun-lbl">${s[0]}</span><div class="bar fun-bar"><span style="width:${Math.max(pct, 1)}%;background:var(--primary)"></span></div>
+      <span class="fun-val">${fmt(s[1])}</span><span class="fun-pct">${i ? `${prev ? Math.round(s[1] / prev * 100) : 0}% of previous` : '100%'}</span></div>`; }).join('');
+
+  root.innerHTML = `<div class="stack" style="--gap:26px">
+    ${attention}
+    ${secHead('This week', 'Last 7 days against the 7 before', 'calendar-range')}
+    <div class="grid g-4">${weekCard('New users', g.users_7d, g.users_prev_7d)}${weekCard('New rooms', g.rooms_7d, g.rooms_prev_7d)}${weekCard('Photos uploaded', g.photos_7d, g.photos_prev_7d)}
+      ${rev ? weekCard('Revenue (live)', rev7, revPrev7, rupees) : kpi('Revenue (live)', '—', 'Revenue endpoint unavailable', '')}</div></section>
+    ${secHead('Where users drop off', 'All time. Each step as a share of the one before it', 'filter')}
+    <div class="card panel-body">${funnel}
+      <div class="fun-row" style="margin-top:4px;padding-top:12px;border-top:1px dashed var(--border)"><span class="fun-lbl">Registered their face</span><div class="bar fun-bar"><span style="width:${Math.max(Math.round((faceReg || 0) / top * 100), 1)}%;background:var(--accent)"></span></div>
+        <span class="fun-val">${fmt(faceReg)}</span><span class="fun-pct">${Math.round((faceReg || 0) / top * 100)}% of sign-ups</span></div>
+      ${worst ? `<div class="fun-note">Biggest drop: <b>${worst.from}</b> → <b>${worst.to}</b>, only ${Math.round(worst.conv * 100)}% make it. That step is where effort pays most.</div>` : ''}</div></section>
+    ${secHead('Last 30 days', `${fmt(sum30('users'))} users · ${fmt(sum30('rooms'))} rooms · ${fmt(sum30('photos'))} photos`, 'calendar')}
+    <div class="grid g-3">
+      ${chartCard('ovUsers', 'New users per day', ser('users', 'Users', '#5B4FD9'), { fmtY: v => Math.round(v) })}
+      ${chartCard('ovRooms', 'New rooms per day', ser('rooms', 'Rooms', '#A78BFA'), { fmtY: v => Math.round(v) })}
+      ${chartCard('ovPhotos', 'Photos per day', ser('photos', 'Photos', '#22C55E'), { fmtY: v => Math.round(v) })}
+    </div></section>
+    ${secHead('Today', 'Last 24 hours', 'sun')}
+    <div class="grid g-3">
+      ${kpi('New users', fmt(a.new_users), '', 'user-plus')}
+      ${kpi('New rooms', fmt(a.new_rooms), '', 'door-open')}
+      ${kpi('New photos', fmt(a.new_photos), '', 'image')}
+      ${kpi('Face jobs done', t ? fmt(t.done_24h) : '—', t ? `${fmt(t.done_1h)} in the last hour` : '', 'cpu')}
+      ${kpi('Face jobs failed', t ? fmt(t.failed_24h) : '—', q ? `${fmt(q.pending + q.processing)} in queue now` : '', 'x-circle')}
+      ${kpi('Avg time per face job', t ? dur(t.avg_seconds_per_job) : '—', 'Last 100 jobs', 'timer')}
+    </div></section>
+    ${secHead('Totals', 'Everything, all time', 'database')}
+    <div class="grid g-4">
+      ${kpi('Users', fmt(ov.total_users), `${fmt(f.joined_room)} joined a room`, 'users')}
+      ${kpi('Rooms', fmt(ov.total_rooms), `${fmt(Math.round(sum30('rooms') / 30 * 10) / 10)} a day lately`, 'door-open')}
+      ${kpi('Photos', fmt(ov.total_photos), ov.total_rooms ? `~${Math.round(ov.total_photos / ov.total_rooms)} per room` : '', 'image')}
+      ${kpi('Faces registered', fmt(faces), ov.total_users ? Math.round(faces / ov.total_users * 100) + '% of users' : '', 'scan-face')}
+      ${kpi('Face embeddings', wk ? fmt(wk.data.embeddings) : '—', 'Faces found in photos', 'database')}
+      ${kpi('Face jobs processed', q ? fmt(q.done) : '—', q ? `${fmt(q.failed)} failed` : '', 'check-check')}
+      ${kpi('Revenue (live)', rev ? rupees(livePaid.reduce((s, p) => s + (p.amount_inr || 0), 0)) : '—', rev ? `${fmt(livePaid.length)} purchases` : '', 'indian-rupee')}
+      ${kpi('Waitlist', fmt(ov.waitlist_count), 'Signups on rollouts.in', 'list-plus')}
+    </div></section>
+    ${secHead('Health and other', 'Slow-moving things worth keeping an eye on', 'heart-pulse')}
+    <div class="grid g-4">
+      ${kpi('Dead rooms', fmt(h.dead_rooms), 'Created, 0 photos', 'door-closed')}
+      ${kpi('Dormant users', fmt(h.dormant_users), 'Never joined a room', 'user-x')}
+      ${kpi('Thumbnail failures', thumb + '%', `This week ${thumb7}%`, 'image-off')}
+      ${kpi('API errors (7d)', fmt(h.errors_7d ?? 0), `Last week ${fmt(h.errors_prev_7d ?? 0)}`, 'alert-triangle')}
+      ${ins.top_room ? kpi('Top room', esc(ins.top_room.name || 'Unnamed'), `${fmt(ins.top_room.photo_count)} photos`, 'trophy') : ''}
+      ${ins.top_user ? kpi('Top host', esc(ins.top_user.name || 'User'), `${fmt(ins.top_user.rooms_created)} rooms created`, 'crown') : ''}
+    </div></section></div>`;
+  drawCharts([
+    { id: 'ovUsers', series: ser('users', 'Users', '#5B4FD9'), dateAxis: true, fmtY: v => Math.round(v) },
+    { id: 'ovRooms', series: ser('rooms', 'Rooms', '#A78BFA'), dateAxis: true, fmtY: v => Math.round(v) },
+    { id: 'ovPhotos', series: ser('photos', 'Photos', '#22C55E'), dateAxis: true, fmtY: v => Math.round(v) },
+  ]);
+  icons(); stamp();
+}
+
+/* ── generic filterable list (users / rooms / waitlist / jobs) ── */
+function listPage(root, { title, sub, rows, cols, searchKeys, chips, chipFn, onRow, emptyText, extraStats }) {
+  let query = '', chip = chips ? chips.current : null;
+  root.innerHTML = `<div class="stack">${extraStats || ''}<section class="card panel"><div class="toolbar">${searchBox('q', 'Search…')}${chips ? chipRow('chips', chips.opts, chip) : ''}
+    <span class="count-note" id="countNote"></span></div><div class="table-wrap"><table><thead><tr>${cols.map(c => `<th>${c.h}</th>`).join('')}</tr></thead><tbody id="tb"></tbody></table></div></section></div>`;
+  const draw = () => {
+    const list = rows.filter(r => (!chipFn || chipFn(r, chip)) && (!query || searchKeys(r).toLowerCase().includes(query)));
+    $('#countNote').textContent = `${fmt(list.length)} of ${fmt(rows.length)}`;
+    $('#tb').innerHTML = list.length ? list.map((r, i) => `<tr class="${onRow ? 'clickable' : ''}" data-i="${i}">${cols.map(c => `<td class="${c.cls || ''}">${c.f(r)}</td>`).join('')}</tr>`).join('')
+      : `<tr class="state-row"><td colspan="${cols.length}">${emptyText || 'Nothing here yet.'}</td></tr>`;
+    if (onRow) $('#tb').querySelectorAll('tr.clickable').forEach(tr => tr.addEventListener('click', () => onRow(list[+tr.dataset.i])));
+    icons();
+  };
+  $('#q').addEventListener('input', e => { query = e.target.value.trim().toLowerCase(); draw(); });
+  if (chips) wireChips('chips', v => { chip = v; draw(); });
+  draw(); stamp();
+}
+
+async function pageUsers(root) {
+  root.innerHTML = loading(2);
+  const users = await api('/dashboard/users');
+  sideCounts.users = users.length; renderNav();
+  const withFace = users.filter(u => u.face_registered).length;
+  listPage(root, {
+    rows: users, searchKeys: u => `${u.name || ''} ${u.device_id || ''} ${u.id}`,
+    chips: { opts: [['all', 'All'], ['face', 'Face registered'], ['noface', 'No face']], current: 'all' },
+    chipFn: (u, c) => c === 'all' || (c === 'face' ? u.face_registered : !u.face_registered),
+    onRow: u => openUser(u.id),
+    extraStats: `<div class="grid g-4">${kpi('Users (latest 100)', fmt(users.length), 'Most recent sign-ups', 'users')}${kpi('Face registered', fmt(withFace), users.length ? Math.round(withFace / users.length * 100) + '%' : '', 'scan-face', 'green')}
+      ${kpi('Created a room', fmt(users.filter(u => u.rooms_created).length), 'Hosts', 'crown', 'amber')}${kpi('Never joined a room', fmt(users.filter(u => !u.rooms_joined && !u.rooms_created).length), 'Dormant', 'user-x', 'red')}</div>`,
+    cols: [
+      { h: 'User', f: u => `<div class="cell-user">${avatar(u)}<span class="cell-name">${userName(u)}</span></div>` },
+      { h: 'Face', f: u => u.face_registered ? pill('Registered', 'green') : pill('None') },
+      { h: 'Rooms created', cls: 'num', f: u => fmt(u.rooms_created) },
+      { h: 'Rooms joined', cls: 'num', f: u => fmt(u.rooms_joined) },
+      { h: 'Signed up', cls: 'date', f: u => fmtDate(u.created_at) },
+    ],
+  });
+}
+
+async function pageRooms(root) {
+  root.innerHTML = loading(2);
+  const rooms = await api('/dashboard/rooms');
+  sideCounts.rooms = rooms.length; renderNav();
+  const photos = rooms.reduce((s, r) => s + (r.photo_count || 0), 0);
+  listPage(root, {
+    rows: rooms, searchKeys: r => `${r.name || ''} ${r.code || ''}`,
+    chips: { opts: [['all', 'All'], ['active', 'With photos'], ['empty', 'Empty']], current: 'all' },
+    chipFn: (r, c) => c === 'all' || (c === 'active' ? r.photo_count > 0 : !r.photo_count),
+    onRow: r => openRoom(r.id),
+    extraStats: `<div class="grid g-4">${kpi('Rooms', fmt(rooms.length), 'Most recent', 'door-open', 'blue')}${kpi('Photos across rooms', fmt(photos), '', 'image', 'green')}
+      ${kpi('Avg photos / room', rooms.length ? fmt(Math.round(photos / rooms.length)) : '—', '', 'bar-chart-3')}${kpi('Empty rooms', fmt(rooms.filter(r => !r.photo_count).length), 'No photos yet', 'door-closed', 'amber')}</div>`,
+    cols: [
+      { h: 'Room', f: r => `<div class="cell-room"><span class="cell-name">${esc(r.name || 'Unnamed')}</span></div>` },
+      { h: 'Code', f: r => `<span class="code">${esc(r.code || '—')}</span>` },
+      { h: 'Members', cls: 'num', f: r => fmt(r.member_count) },
+      { h: 'Photos', cls: 'num', f: r => fmt(r.photo_count) },
+      { h: 'Created', cls: 'date', f: r => fmtDate(r.created_at) },
+    ],
+  });
+}
+
+async function pageWaitlist(root) {
+  root.innerHTML = loading(2);
+  const rows = await api('/dashboard/ops/waitlist');
+  sideCounts.waitlist = rows.length; renderNav();
+  const keys = rows.length ? Object.keys(rows[0]).filter(k => k !== 'id') : [];
+  const prio = ['name', 'email', 'phone', 'city', 'source', 'created_at'];
+  const shown = [...prio.filter(k => keys.includes(k)), ...keys.filter(k => !prio.includes(k))].slice(0, 6);
+  listPage(root, {
+    rows, searchKeys: r => Object.values(r).join(' '),
+    emptyText: 'Nobody on the waitlist yet.',
+    extraStats: `<div class="grid g-3">${kpi('Waitlist signups', fmt(rows.length), 'Newest 300 shown', 'list-plus')}
+      ${kpi('Last 7 days', fmt(rows.filter(r => Date.now() - new Date(r.created_at) < 6048e5).length), '', 'calendar', 'green')}
+      ${kpi('Last 24 hours', fmt(rows.filter(r => Date.now() - new Date(r.created_at) < 864e5).length), '', 'clock', 'blue')}</div>`,
+    cols: shown.map(k => ({ h: k.replace(/_/g, ' '), cls: k.includes('at') ? 'date' : '', f: r => k.includes('_at') ? fmtDT(r[k]) : esc(String(r[k] ?? '—')) })),
+  });
+}
+
+async function pageRevenue(root) {
+  root.innerHTML = loading(3);
+  const d = await api('/dashboard/ops/revenue');
+  const LIST = d.list_price_inr || { event_organised_499: 499, event_organised_999: 999 };
+  const label = p => p === 'event_organised_499' ? 'Large · ₹499' : p === 'event_organised_999' ? 'Extra Large · ₹999' : p;
+  const all = (d.purchases || []).map(p => ({ ...p, env: p.env || 'unknown', amount_inr: p.amount_inr ?? (LIST[p.product_id] || 0) }));
+  const roomsByDay = d.rooms_created_by_day || {};
+  const n = e => e === 'all' ? all.length : all.filter(p => p.env === e).length;
+  // Default to live money. Only fall back to everything when nothing could be classified.
+  let env = n('live') || n('sandbox') ? 'live' : 'all';
+  const D = 864e5, FEE = 0.15;
+
+  root.innerHTML = `<div class="stack">
+    <div class="rev-bar">${chipRow('envChips', [['live', `Live (${n('live')})`], ['sandbox', `Sandbox (${n('sandbox')})`], ['all', `All (${all.length})`]], env)}
+      <span class="page-sub" id="envNote"></span></div>
+    <div id="revBody"></div></div>`;
+
+  const draw = () => {
+    const rows = env === 'all' ? all : all.filter(p => p.env === env);
+    const paid = rows.filter(p => !p.refunded_at), refunded = rows.filter(p => p.refunded_at);
+    const sum = a => a.reduce((s, p) => s + (p.amount_inr || 0), 0);
+    const now = Date.now();
+    const within = (a, from, to) => a.filter(p => { const x = new Date(p.created_at).getTime(); return x >= from && x < to; });
+    const mStart = new Date(); mStart.setDate(1); mStart.setHours(0, 0, 0, 0);
+    const lmStart = new Date(mStart); lmStart.setMonth(lmStart.getMonth() - 1);
+    const lmSame = new Date(lmStart.getTime() + (now - mStart.getTime()));   // same point in last month, for a fair comparison
+    const gross = sum(paid), r7 = sum(within(paid, now - 7 * D, now)), rp7 = sum(within(paid, now - 14 * D, now - 7 * D));
+    const rm = sum(within(paid, +mStart, now)), rlm = sum(within(paid, +lmStart, +lmSame));
+    const payers = new Set(paid.map(p => p.user_id).filter(Boolean));
+    const repeat = [...payers].filter(u => paid.filter(p => p.user_id === u).length > 1).length;
+    const unused = paid.filter(p => !p.consumed_at);
+    const keys = Array.from({ length: 30 }, (_, i) => new Date(now - (29 - i) * D).toISOString().slice(0, 10));
+    const byDay = {}; paid.forEach(p => { const k = (p.created_at || '').slice(0, 10); byDay[k] = (byDay[k] || 0) + p.amount_inr; });
+    const series = [{ name: 'Revenue', color: '#059669', data: keys.map(k => [Math.floor(new Date(k).getTime() / 1000), byDay[k] || 0]) }];
+    const rooms30 = keys.reduce((s, k) => s + (roomsByDay[k] || 0), 0), buys30 = within(paid, now - 30 * D, now).length;
+    const byProd = {}; paid.forEach(p => { const b = byProd[p.product_id] = byProd[p.product_id] || { n: 0, amt: 0 }; b.n++; b.amt += p.amount_inr; });
+    const prodMax = Math.max(1, ...Object.values(byProd).map(b => b.amt));
+    const tiers = Object.entries(d.rooms_by_tier || {}), tMax = Math.max(...tiers.map(x => x[1]), 1);
+    const unknown = n('unknown');
+    $('#envNote').textContent = env === 'sandbox' ? 'Store test purchases. No real money moved.'
+      : env === 'live' ? 'Real purchases only. Sandbox test buys are left out.' : 'Everything recorded, live and sandbox together.';
+
+    $('#revBody').innerHTML = `<div class="stack">
+      ${d.env_lookup === false ? `<div class="banner warn"><span class="dot warn"></span><div><div class="banner-title">Can’t tell live from sandbox</div><div class="banner-sub">REVENUECAT_SECRET_KEY isn’t set on the backend, so every purchase shows under All.</div></div></div>`
+        : unknown && env === 'all' ? `<div class="banner warn"><span class="dot warn"></span><div><div class="banner-title">${fmt(unknown)} purchase${unknown > 1 ? 's' : ''} not classified yet</div><div class="banner-sub">RevenueCat is asked about up to 40 buyers per load. Refresh to classify the rest.</div></div></div>` : ''}
+      <div class="grid g-4">
+        ${kpi('Gross revenue', rupees(gross), `${fmt(paid.length)} purchases at list price`, 'indian-rupee')}
+        ${kpi('Estimated payout', rupees(gross * (1 - FEE)), 'After the stores’ 15% fee, before tax', 'wallet')}
+        ${kpi('This month', rupees(rm), `Same point last month ${rupees(rlm)} &nbsp;${deltaChip(rm, rlm)}`, 'calendar')}
+        ${kpi('Last 7 days', rupees(r7), `Previous 7 days ${rupees(rp7)} &nbsp;${deltaChip(r7, rp7)}`, 'calendar-range')}
+        ${kpi('Paying users', fmt(payers.size), payers.size ? `${fmt(repeat)} bought more than once · ${rupees(gross / payers.size)} each` : '', 'users')}
+        ${kpi('New rooms that paid (30d)', rooms30 ? Math.round(buys30 / rooms30 * 100) + '%' : '—', `${fmt(buys30)} purchases, ${fmt(rooms30)} rooms created`, 'percent')}
+        ${kpi('Refunded', fmt(refunded.length), refunded.length ? `${rupees(sum(refunded))} given back` : 'None', 'undo-2')}
+        ${kpi('Paid, not used yet', fmt(unused.length), unused.length ? `${rupees(sum(unused))} of credit waiting to become rooms` : 'Every credit spent', 'hourglass')}
+      </div>
+      ${chartCard('revDay', 'Revenue per day, last 30 days', series, { fmtY: v => '₹' + Math.round(v) })}
+      <div class="grid g-3">
+        ${panel('Sales by product', Object.keys(byProd).length ? Object.entries(byProd).map(([p, b]) => `<div class="bar-row"><span class="lbl" style="width:140px">${esc(label(p))}</span><div class="bar"><span style="width:${b.amt / prodMax * 100}%;background:var(--green)"></span></div><span class="val" style="width:90px">${rupees(b.amt)}</span></div><div class="page-sub" style="margin:-8px 0 12px 152px">${fmt(b.n)} sold</div>`).join('') : '<div class="d-empty">No purchases.</div>')}
+        ${panel('Rooms by tier', tiers.length ? tiers.map(([x, c]) => `<div class="bar-row"><span class="lbl">${esc(x.replace('_', ' '))}</span><div class="bar"><span style="width:${c / tMax * 100}%;background:var(--primary)"></span></div><span class="val">${fmt(c)}</span></div>`).join('') : '<div class="d-empty">No rooms.</div>', { sub: `All environments · ${fmt(d.admin_free_rooms)} comped by admin` })}
+        ${panel('Payments in flight', `<dl class="kv"><dt>Rooms waiting on payment</dt><dd><b>${fmt(d.awaiting_payment ?? 0)}</b></dd><dt>Upgrades waiting</dt><dd><b>${fmt(d.pending_upgrades ?? 0)}</b></dd></dl>
+          <div class="page-sub" style="margin-top:12px">UPI or Ask to Buy not approved yet. They finish on their own when the store confirms.</div>`)}
+      </div>
+      ${panel('Purchases', `<div class="table-wrap"><table><thead><tr><th>Product</th><th>Amount</th><th>Env</th><th>User</th><th>Purchased</th><th>Status</th></tr></thead><tbody>${rows.length ? rows.slice(0, 200).map(p => `<tr class="${p.user_id ? 'clickable' : ''}" ${p.user_id ? `onclick="openUser('${esc(p.user_id)}')"` : ''}>
+        <td>${esc(label(p.product_id))}</td><td class="num">${rupees(p.amount_inr)}</td><td>${p.env === 'live' ? pill('Live', 'green') : p.env === 'sandbox' ? pill('Sandbox', 'amber') : pill('Unknown')}</td>
+        <td class="mono" style="font-size:12px">${p.user_id ? esc(String(p.user_id).slice(0, 8)) + '…' : 'Deleted user'}</td><td class="date">${fmtDT(p.created_at)}</td>
+        <td>${p.refunded_at ? pill('Refunded', 'red') : p.consumed_at ? pill('Used', 'green') : pill('Unused', 'blue')}</td></tr>`).join('') : '<tr class="state-row"><td colspan="6">No purchases here.</td></tr>'}</tbody></table></div>`, { flush: true, sub: rows.length > 200 ? 'Newest 200' : '' })}
+    </div>`;
+    drawCharts([{ id: 'revDay', series, dateAxis: true, fmtY: v => '₹' + Math.round(v) }]);
+    icons();
+  };
+  wireChips('envChips', v => { env = v; draw(); });
+  draw(); stamp();
+}
+
+/* ── Worker ── */
+async function pageWorker(root) {
+  root.innerHTML = loading(3);
+  async function draw() {
+    const w = await api('/dashboard/ops/worker');
+    const hb = w.heartbeat, q = w.queue, t = w.throughput, info = (hb && hb.info) || {};
+    const total = q.pending + q.processing + q.done + q.failed || 1;
+    const state = !hb ? 'warn' : hb.alive ? 'ok' : 'bad';
+    const banner = { ok: ['Worker is online', `Heartbeat ${ago(hb && hb.last_seen)} · up since ${fmtDT(info.started_at)}`],
+      bad: ['Worker looks offline', hb && hb.last_seen ? `Last heartbeat ${ago(hb.last_seen)} — check the Hetzner box (systemctl status face-worker)` : 'No heartbeat has ever been recorded'],
+      warn: ['Heartbeat not set up yet', 'Run migrations/add_worker_observability.sql in Supabase, then redeploy the worker.'] }[state];
+    const mem = info.mem_total_mb ? Math.round(info.mem_used_mb / info.mem_total_mb * 100) : null;
+    root.innerHTML = `<div class="stack">
+      <div class="banner ${state}"><span class="dot ${state}"></span><div><div class="banner-title">${banner[0]}</div><div class="banner-sub">${banner[1]}</div></div>
+        <div style="margin-left:auto;text-align:right">${pill('Engine: ' + esc(w.engine), w.engine === 'insightface' ? 'purple' : 'blue')}</div></div>
+      <div class="grid g-4">
+        ${kpi('Pending', fmt(q.pending), t.backlog_age_seconds > 5 ? `Oldest waiting ${dur(t.backlog_age_seconds)}` : 'Nothing waiting', 'hourglass', q.pending ? 'amber' : 'green')}
+        ${kpi('Processing', fmt(q.processing), 'Claimed by the worker', 'loader', 'blue')}
+        ${kpi('Done · last hour', fmt(t.done_1h), `${fmt(t.done_24h)} in 24h`, 'check-check', 'green')}
+        ${kpi('Failed · last 24h', fmt(t.failed_24h), `${fmt(q.failed)} all-time`, 'x-circle', t.failed_24h ? 'red' : 'green')}
+        ${kpi('Avg time / job', dur(t.avg_seconds_per_job), 'Last 100 done jobs', 'timer')}
+        ${kpi('Backlog ETA', t.eta_minutes ? t.eta_minutes + ' min' : '—', `${fmt(q.pending + q.processing)} jobs left`, 'clock')}
+        ${kpi('Face embeddings', fmt(w.data.embeddings), 'Stored in Supabase', 'database')}
+        ${kpi('Users with face', fmt(w.data.users_with_embedding), 'InsightFace registered', 'scan-face', 'blue')}
+      </div>
+      <div class="grid g-2">
+        ${panel('Queue breakdown', `<div class="bar" style="height:14px;margin-bottom:16px"><span style="width:${q.done / total * 100}%;background:#22C55E"></span><span style="width:${q.processing / total * 100}%;background:#3B82F6"></span><span style="width:${q.pending / total * 100}%;background:#F59E0B"></span><span style="width:${q.failed / total * 100}%;background:#EF4444"></span></div>
+          ${[['Done', q.done, '#22C55E'], ['Processing', q.processing, '#3B82F6'], ['Pending', q.pending, '#F59E0B'], ['Failed', q.failed, '#EF4444']].map(([l, n, c]) => `<div class="bar-row" style="margin-bottom:8px"><span class="dot" style="background:${c}"></span><span class="lbl" style="width:100px">${l}</span><span class="val" style="width:auto;margin-left:auto">${fmt(n)}</span></div>`).join('')}`, { sub: 'All jobs ever queued' })}
+        ${panel('Worker vitals', hb ? `<dl class="kv"><dt>Last heartbeat</dt><dd>${hb.last_seen ? fmtDT(hb.last_seen) + ' (' + ago(hb.last_seen) + ')' : '—'}</dd>
+          <dt>Jobs done</dt><dd>${fmt(info.done)} since start</dd><dt>Jobs failed</dt><dd>${fmt(info.failed)} since start</dd><dt>Last job</dt><dd>${info.last_job_at ? ago(info.last_job_at) : '—'}</dd>
+          <dt>Load (1m)</dt><dd>${info.load_1m ?? '—'}</dd><dt>Memory</dt><dd>${mem !== null ? `${info.mem_used_mb} / ${info.mem_total_mb} MB (${mem}%)<div class="bar" style="margin-top:6px"><span style="width:${mem}%;background:${mem > 85 ? '#EF4444' : 'var(--primary)'}"></span></div>` : '—'}</dd>
+          <dt>Model</dt><dd>${esc(info.model || '—')}</dd></dl>` : '<div class="d-empty">No heartbeat data yet.</div>')}
+      </div>
+      ${panel('Recent jobs', `<table><thead><tr><th>Type</th><th>Status</th><th>Queued</th><th>Duration</th><th>Error</th></tr></thead><tbody>${w.recent_jobs.length ? w.recent_jobs.map((j, i) => {
+        const d = j.claimed_at && j.done_at ? (new Date(j.done_at) - new Date(j.claimed_at)) / 1000 : null;
+        return `<tr class="clickable" data-i="${i}"><td>${esc(j.job_type)}</td><td>${jobPill(j.status)}</td><td class="date">${ago(j.created_at)}</td><td class="num">${dur(d)}</td><td class="trunc" style="color:var(--red)">${esc(j.error || '')}</td></tr>`;
+      }).join('') : '<tr class="state-row"><td colspan="5">No jobs yet.</td></tr>'}</tbody></table>`, { flush: true, actions: '<a class="btn" href="#/services/jobs">All jobs <i data-lucide="arrow-right"></i></a>' })}
+    </div>`;
+    root.querySelectorAll('tr.clickable').forEach(tr => tr.addEventListener('click', () => openJob(w.recent_jobs[+tr.dataset.i])));
+    icons(); stamp();
+  }
+  await draw(); every(draw, 6000);
+}
+
+async function pageJobs(root) {
+  let status = 'all', type = 'all', jobs = [];
+  root.innerHTML = `<div class="stack"><section class="card panel"><div class="toolbar">${searchBox('q', 'Search id, error…')}
+    ${chipRow('stChips', [['all', 'All'], ['pending', 'Pending'], ['processing', 'Processing'], ['done', 'Done'], ['failed', 'Failed']], status)}
+    ${chipRow('tyChips', [['all', 'Any type'], ['index_photo', 'Photos'], ['register_face', 'Selfies']], type)}<span class="count-note" id="countNote"></span></div>
+    <div class="table-wrap"><table><thead><tr><th>Type</th><th>Status</th><th>Queued</th><th>Started</th><th>Duration</th><th>Error</th></tr></thead><tbody id="tb"></tbody></table></div></section></div>`;
+  let query = '';
+  const draw = () => {
+    const list = jobs.filter(j => !query || `${j.id} ${j.error || ''} ${j.photo_id || ''} ${j.room_id || ''}`.toLowerCase().includes(query));
+    $('#countNote').textContent = `${fmt(list.length)} shown (latest 200)`;
+    $('#tb').innerHTML = list.length ? list.map((j, i) => {
+      const d = j.claimed_at && j.done_at ? (new Date(j.done_at) - new Date(j.claimed_at)) / 1000 : null;
+      return `<tr class="clickable" data-i="${i}"><td>${esc(j.job_type)}</td><td>${jobPill(j.status)}</td><td class="date">${fmtDT(j.created_at)}</td><td class="date">${j.claimed_at ? ago(j.claimed_at) : '—'}</td><td class="num">${dur(d)}</td><td class="trunc" style="color:var(--red)">${esc(j.error || '')}</td></tr>`;
+    }).join('') : '<tr class="state-row"><td colspan="6">No jobs match.</td></tr>';
+    $('#tb').querySelectorAll('tr.clickable').forEach(tr => tr.addEventListener('click', () => openJob(list[+tr.dataset.i])));
+    icons();
+  };
+  const load = async () => {
+    const p = new URLSearchParams({ limit: 200 }); if (status !== 'all') p.set('status', status); if (type !== 'all') p.set('job_type', type);
+    jobs = await api('/dashboard/ops/worker/jobs?' + p); draw(); stamp();
+  };
+  $('#q').addEventListener('input', e => { query = e.target.value.trim().toLowerCase(); draw(); });
+  wireChips('stChips', v => { status = v; load(); }); wireChips('tyChips', v => { type = v; load(); });
+  await load(); every(load, 8000);
+}
+
+const LOG_SOURCES = { api: 'API server', face: 'Face worker', video: 'Video worker' };
+async function pageWorkerLogs(root, source = 'face') {
+  let lines = [], lastId = 0, paused = false, onlyErr = false, filter = '', follow = true, configured = true;
+  const about = source === 'video'
+    ? 'lines are shipped from the video worker on the Hetzner box every ~2s (only the newest ~2000 are kept). They appear once the updated <span class="code">video_worker.py</span> is running there.'
+    : 'lines are shipped from the Hetzner worker every ~2s (idle “polling…” lines are skipped, only the newest ~2000 are kept). The full 5000-line file lives on the box at <span class="code">/root/face-worker.log</span>.';
+  root.innerHTML = `<div class="stack"><section class="card panel"><div class="toolbar">${searchBox('q', 'Filter lines…')}
+    ${chipRow('lvl', [['all', 'All'], ['err', 'Errors only']], 'all')}
+    <label class="toggle"><input type="checkbox" id="follow" checked> Follow</label>
+    <button class="btn" id="pauseBtn"><i data-lucide="pause"></i> Pause</button>
+    <button class="btn" id="copyBtn"><i data-lucide="copy"></i> Copy</button>
+    <button class="btn" id="clearBtn"><i data-lucide="eraser"></i> Clear view</button>
+    <span class="count-note" id="countNote"></span></div>
+    <div id="termWrap" style="padding:14px"><div class="term" id="term"><div class="term-empty">Loading…</div></div></div></section>
+    <div class="callout" style="padding:14px;text-align:left"><b style="color:var(--text)">About this view:</b> ${about}</div></div>`;
+  const term = $('#term');
+  const draw = () => {
+    const shown = lines.filter(l => (!onlyErr || /ERR|CRIT/.test(l.level)) && (!filter || l.message.toLowerCase().includes(filter)));
+    $('#countNote').textContent = `${fmt(shown.length)} lines`;
+    if (!configured) { term.innerHTML = source === 'video'
+      ? '<div class="term-empty">Video worker logs need the backend redeployed (migration 0009) and the updated <span class="code">video_worker.py</span> running on the box.</div>'
+      : '<div class="term-empty">Log shipping isn’t set up yet.<br>Run <span class="code">migrations/add_worker_observability.sql</span> in Supabase, then redeploy <span class="code">face_worker.py</span> on the box.</div>'; return; }
+    term.innerHTML = shown.length ? shown.map(l => `<div class="log-line ${/ERR|CRIT/.test(l.level) ? 'is-error' : ''}"><span class="log-ts">${clock(l.created_at)}</span><span class="log-lvl ${esc(l.level)}">${esc(l.level)}</span><span class="log-msg">${esc(l.message)}</span></div>`).join('')
+      : '<div class="term-empty">No log lines yet. Lines appear when the worker processes something.</div>';
+    if (follow) term.scrollTop = term.scrollHeight;
+  };
+  const poll = async () => {
+    if (paused) return;
+    const d = await api(`/dashboard/ops/worker/logs?source=${source}&after_id=${lastId}&limit=${lastId ? 500 : 400}`);
+    configured = d.configured;
+    if (d.logs.length) { lines = lines.concat(d.logs).slice(-2000); lastId = d.logs[d.logs.length - 1].id; }
+    draw(); stamp();
+  };
+  $('#q').addEventListener('input', e => { filter = e.target.value.trim().toLowerCase(); draw(); });
+  wireChips('lvl', v => { onlyErr = v === 'err'; draw(); });
+  $('#follow').addEventListener('change', e => { follow = e.target.checked; if (follow) term.scrollTop = term.scrollHeight; });
+  term.addEventListener('wheel', () => { if (term.scrollTop + term.clientHeight < term.scrollHeight - 30 && follow) { follow = false; $('#follow').checked = false; } });
+  $('#pauseBtn').addEventListener('click', e => { paused = !paused; e.currentTarget.innerHTML = paused ? '<i data-lucide="play"></i> Resume' : '<i data-lucide="pause"></i> Pause'; icons(); });
+  $('#copyBtn').addEventListener('click', () => { navigator.clipboard.writeText(lines.map(l => `${l.created_at} [${l.level}] ${l.message}`).join('\n')); toast('Copied logs'); });
+  $('#clearBtn').addEventListener('click', () => { lines = []; draw(); });
+  await poll(); every(poll, 3000, { onlyAuto: false });
+}
+
+/* ── Every service's errors in one place ── */
+async function pageAllErrors(root) {
+  let hours = 24, src = 'all', items = [];
+  root.innerHTML = `<div class="stack">
+    <div class="grid g-4" id="errKpis">${loading(1)}</div>
+    <section class="card panel"><div class="toolbar"><select class="sel" id="hrs">${[[1, 'Last hour'], [6, 'Last 6 hours'], [24, 'Last 24 hours'], [72, 'Last 3 days'], [168, 'Last 7 days']].map(([v, l]) => `<option value="${v}" ${v === hours ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      ${chipRow('srcChips', [['all', 'All services'], ...Object.entries(LOG_SOURCES)], src)}<span class="count-note" id="countNote"></span></div>
+      <div style="padding:14px"><div class="term" id="term" style="height:480px"><div class="term-empty">Loading…</div></div></div></section>
+    ${panel('API errors by endpoint', '<div id="errs"><div class="d-state">Loading…</div></div>', { sub: 'Non-2xx responses, this week against last', flush: true })}</div>`;
+  const draw = () => {
+    const count = s => items.filter(i => i.source === s).length;
+    $('#errKpis').innerHTML = kpi('All errors', fmt(items.length), `In the ${$('#hrs').selectedOptions[0].textContent.toLowerCase()}`, 'alert-triangle')
+      + Object.entries(LOG_SOURCES).map(([k, l]) => `<a href="#/logs/${k}" style="text-decoration:none;color:inherit">${kpi(l, fmt(count(k)), count(k) ? 'Open its live logs →' : 'Quiet', '')}</a>`).join('');
+    const shown = src === 'all' ? items : items.filter(i => i.source === src);
+    $('#countNote').textContent = `${fmt(shown.length)} errors`;
+    $('#term').innerHTML = shown.length ? shown.map(i => `<div class="log-line ${/ERR|CRIT/.test(i.level) ? 'is-error' : ''}"><span class="log-ts">${esc(fmtDT(i.at))}</span>
+      <span class="log-src s-${esc(i.source)}">${esc(LOG_SOURCES[i.source] || i.source)}</span><span class="log-lvl ${esc(i.level)}">${esc(i.level)}</span><span class="log-msg">${esc(i.message)}</span></div>`).join('')
+      : '<div class="term-empty">No errors in this window. 🎉</div>';
+    icons();
+  };
+  const load = async () => {
+    try { items = (await api('/dashboard/ops/errors/recent?hours=' + hours)).items || []; }
+    catch (e) { if (String(e.message) === '404') { $('#term').innerHTML = '<div class="term-empty">Redeploy the backend to see every service’s errors here. Until then use the API server and Face worker tabs.</div>'; return; } throw e; }
+    draw(); stamp();
+    try {
+      const rows = (await api('/dashboard/deployments/errors')).breakdown || [];
+      $('#errs').innerHTML = rows.length ? `<table><thead><tr><th>Endpoint</th><th>Method</th><th>Code</th><th>This week</th><th>Last week</th></tr></thead><tbody>${rows.map(r => {
+        const diff = (r.count_7d || 0) - (r.count_prev_7d || 0);
+        return `<tr><td><span class="code">${esc(r.path)}</span></td><td>${pill(esc(r.method), 'purple')}</td><td>${pill(r.status_code, r.status_code >= 500 ? 'red' : 'amber')}</td>
+          <td class="num">${fmt(r.count_7d)} ${diff ? `<span class="delta ${diff > 0 ? 'down' : 'up'}">${diff > 0 ? '↑' : '↓'}${Math.abs(diff)}</span>` : ''}</td><td class="num" style="color:var(--sub)">${fmt(r.count_prev_7d)}</td></tr>`; }).join('')}</tbody></table>`
+        : '<div class="d-empty">No API errors this week 🎉</div>';
+    } catch { $('#errs').innerHTML = '<div class="d-state err">Failed to load the breakdown.</div>'; }
+  };
+  $('#hrs').addEventListener('change', e => { hours = +e.target.value; load(); });
+  wireChips('srcChips', v => { src = v; draw(); });
+  await load(); every(load, 30000);
+}
+
+/* ── Services ── */
+const SVC_DETAILS = { api: 'services/api', face_worker: 'services/worker', server: 'services/server' };
+const SVC_LOGS = { api: 'logs/api', face: 'logs/face', video: 'logs/video' };
+function svcCard(s) {
+  const hist = svcHistory[s.id] || [];
+  return `<div class="card svc-card is-${s.state}">
+    <div class="svc-top"><span class="dot ${stateTone(s.state)}"></span><div style="min-width:0;flex:1"><div class="svc-name">${esc(s.name)}</div>${s.provider ? `<div class="svc-prov">${esc(s.provider)}</div>` : ''}</div>${statePill(s.state)}</div>
+    ${s.role ? `<div class="svc-role">${esc(s.role)}</div>` : ''}
+    <div class="svc-detail">${esc(s.detail)}</div>
+    ${s.vitals.length ? `<dl class="svc-vitals">${s.vitals.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
+    <div class="svc-foot"><span class="svc-hist" title="Checks since you opened the dashboard, oldest first">${hist.map(x => `<i class="${stateTone(x.state)}"></i>`).join('')}</span>
+      <span class="svc-lat">${s.latency_ms} ms</span>
+      ${SVC_DETAILS[s.id] ? `<a class="btn sm" href="#/${SVC_DETAILS[s.id]}">Details</a>` : ''}${s.logs ? `<a class="btn sm" href="#/${SVC_LOGS[s.logs]}">Logs</a>` : ''}</div></div>`;
+}
+async function pageServices(root) {
+  root.innerHTML = loading(3);
+  async function draw() {
+    const d = await loadServices();
+    const bad = d.services.filter(s => s.state === 'down'), warn = d.services.filter(s => s.state !== 'ok' && s.state !== 'down');
+    const overall = bad.length ? 'bad' : warn.length ? 'warn' : 'ok';
+    const by = id => d.services.find(s => s.id === id) || { state: id === 'app' ? 'ok' : 'unknown' };
+    const node = (label, sub, id) => `<div class="node ${by(id).state}"><b>${label}</b><small>${sub}</small></div>`;
+    // Down first, then needing attention, then healthy, so problems are never below the fold.
+    const order = { down: 0, degraded: 1, unknown: 2, ok: 3 };
+    const sorted = [...d.services].sort((x, y) => (order[x.state] ?? 2) - (order[y.state] ?? 2));
+    root.innerHTML = `<div class="stack">
+      <div class="banner ${overall}"><span class="dot ${overall}"></span><div><div class="banner-title">${bad.length ? `${bad.map(s => s.name).join(', ')} ${bad.length > 1 ? 'are' : 'is'} down`
+        : warn.length ? `${warn.length} service${warn.length > 1 ? 's' : ''} need${warn.length > 1 ? '' : 's'} attention` : 'All systems operational'}</div>
+        <div class="banner-sub">${d.services.length} services · checked ${ago(d.checked_at)} · face engine <b>${esc(d.config.face_engine)}</b> · backend commit <span class="code">${esc(d.config.commit || 'n/a')}</span>${d.config.environment ? ' · ' + esc(d.config.environment) : ''}</div></div></div>
+      ${d.legacy ? '<div class="callout" style="padding:12px;text-align:left">Showing the basic status list. Redeploy the backend to get per-service vitals and the video worker.</div>' : ''}
+      <div class="grid svc-grid">${sorted.map(svcCard).join('')}</div>
+      ${d.legacy ? '' : panel('How it connects', `<div class="flow">${node('Mobile app', 'iOS · Android', 'app')}<span class="arrow">→</span>${node('API server', 'Railway', 'api')}<span class="arrow">↔</span>
+        ${node('Database', 'Supabase', 'database')}<span class="arrow">←</span>${node('Face worker', 'Hetzner', 'face_worker')}${node('Video worker', 'Hetzner', 'video_worker')}
+        <span class="arrow" style="width:100%;text-align:center;line-height:.6">↕</span>
+        ${node('Media', 'Cloudflare R2', 'media')}${node('Payments', 'RevenueCat', 'payments')}${node('Push', 'Expo', 'push')}${node('Server', 'Hetzner Cloud', 'server')}</div>
+        <div class="panel-sub" style="text-align:center;padding-bottom:12px">The workers only make outbound calls, so everything meets in the database. If the API is down, the app’s maintenance and update screens still work: they are read from R2.</div>`)}
+    </div>`;
+    icons(); stamp();
+  }
+  await draw(); every(draw, 30000);
+}
+
+/* ── Hetzner / Railway graphs ── */
+function rangeSel(current) {
+  return `<select class="sel" id="range">${[[1, 'Last hour'], [6, 'Last 6 hours'], [24, 'Last 24 hours'], [72, 'Last 3 days'], [168, 'Last 7 days']].map(([v, l]) => `<option value="${v}" ${v === current ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+}
+async function pageHetzner(root) {
+  let hours = 6;
+  async function draw() {
+    const d = await api('/dashboard/ops/hetzner?hours=' + hours);
+    if (!d.configured) { root.innerHTML = notConfigured('Connect your Hetzner account', [
+      'Hetzner Console → your project → <b>Security → API tokens → Generate</b> (permission: <b>Read</b>)',
+      'Add it to the backend on Railway as <span class="code">HETZNER_API_TOKEN</span>',
+      'Optional: <span class="code">HETZNER_SERVER_ID</span> (defaults to 166513887)', 'Reload this page']); return; }
+    if (d.error) { root.innerHTML = `<div class="banner bad"><span class="dot bad"></span><div><div class="banner-title">Couldn’t reach the Hetzner API</div><div class="banner-sub">${esc(d.error)}</div></div></div>`; return; }
+    const s = d.server, sr = d.series, tr = s.traffic || {};
+    const usedGB = ((tr.outgoing || 0) / 1e9), incGB = ((tr.included || 0) / 1e9);
+    root.innerHTML = `<div class="stack">
+      <div class="banner ${s.status === 'running' ? 'ok' : 'bad'}"><span class="dot ${s.status === 'running' ? 'ok' : 'bad'}"></span><div><div class="banner-title">${esc(s.name)} · ${esc(s.status)}</div>
+        <div class="banner-sub">${esc(s.type)} · ${s.cores} vCPU · ${s.memory_gb} GB RAM · ${s.disk_gb} GB disk · ${esc(s.datacenter)} · <span class="code">${esc(s.ip)}</span></div></div>
+        <div style="margin-left:auto">${rangeSel(hours)}</div></div>
+      <div class="grid g-4">${kpi('CPU now', sr.cpu.length ? sr.cpu[sr.cpu.length - 1][1].toFixed(1) + '%' : '—', 'Latest sample', 'cpu')}
+        ${kpi('Network in', sr.net_in.length ? sr.net_in[sr.net_in.length - 1][1].toFixed(1) + ' KB/s' : '—', 'Downloading photos', 'arrow-down-to-line', 'green')}
+        ${kpi('Network out', sr.net_out.length ? sr.net_out[sr.net_out.length - 1][1].toFixed(1) + ' KB/s' : '—', 'To Supabase', 'arrow-up-from-line', 'blue')}
+        ${kpi('Traffic this month', usedGB.toFixed(2) + ' GB', incGB ? `of ${incGB.toFixed(0)} GB included (outbound)` : '', 'gauge', 'amber')}</div>
+      <div class="grid g-2">
+        ${chartCard('hzCpu', 'CPU usage', [{ name: 'CPU', color: '#5B4FD9', data: sr.cpu }], { fmtY: v => v.toFixed(1), unit: '%' })}
+        ${chartCard('hzNet', 'Network bandwidth', [{ name: 'In', color: '#22C55E', data: sr.net_in }, { name: 'Out', color: '#3B82F6', data: sr.net_out }], { fmtY: v => v.toFixed(1), unit: ' KB/s' })}
+        ${chartCard('hzDisk', 'Disk bandwidth', [{ name: 'Read', color: '#F59E0B', data: sr.disk_read }, { name: 'Write', color: '#EF4444', data: sr.disk_write }], { fmtY: v => v.toFixed(1), unit: ' KB/s' })}
+        ${chartCard('hzIops', 'Disk IOPS', [{ name: 'Read', color: '#F59E0B', data: sr.iops_read }, { name: 'Write', color: '#EF4444', data: sr.iops_write }], { fmtY: v => v.toFixed(1) })}
+      </div></div>`;
+    drawCharts([
+      { id: 'hzCpu', series: [{ name: 'CPU', color: '#5B4FD9', data: sr.cpu }], fmtY: v => v.toFixed(0), unit: '%', dateAxis: hours > 24 },
+      { id: 'hzNet', series: [{ name: 'In', color: '#22C55E', data: sr.net_in }, { name: 'Out', color: '#3B82F6', data: sr.net_out }], fmtY: v => v.toFixed(1), unit: ' KB/s', dateAxis: hours > 24 },
+      { id: 'hzDisk', series: [{ name: 'Read', color: '#F59E0B', data: sr.disk_read }, { name: 'Write', color: '#EF4444', data: sr.disk_write }], fmtY: v => v.toFixed(1), unit: ' KB/s', dateAxis: hours > 24 },
+      { id: 'hzIops', series: [{ name: 'Read', color: '#F59E0B', data: sr.iops_read }, { name: 'Write', color: '#EF4444', data: sr.iops_write }], fmtY: v => v.toFixed(1), dateAxis: hours > 24 },
+    ]);
+    $('#range').addEventListener('change', e => { hours = +e.target.value; draw(); });
+    icons(); stamp();
+  }
+  root.innerHTML = loading(3); await draw(); every(draw, 60000);
+}
+
+async function pageRailway(root) {
+  let hours = 6;
+  async function draw() {
+    const [m, hist] = await Promise.all([api('/dashboard/ops/railway/metrics?hours=' + hours), api('/dashboard/deployments/history').catch(() => [])]);
+    const sr = m.series || {}, get = k => sr[k] || [];
+    const graphs = m.error ? `<div class="banner warn"><span class="dot warn"></span><div><div class="banner-title">Usage metrics unavailable</div><div class="banner-sub">${esc(m.error)}</div></div></div>` : `<div class="grid g-2">
+      ${chartCard('rwCpu', 'CPU (vCPU)', [{ name: 'CPU', color: '#5B4FD9', data: get('CPU_USAGE') }], { fmtY: v => v.toFixed(3) })}
+      ${chartCard('rwMem', 'Memory (GB)', [{ name: 'Memory', color: '#22C55E', data: get('MEMORY_USAGE_GB') }], { fmtY: v => v.toFixed(2), unit: ' GB' })}
+      ${chartCard('rwNet', 'Network (GB, cumulative rate)', [{ name: 'Received', color: '#3B82F6', data: get('NETWORK_RX_GB') }, { name: 'Sent', color: '#F59E0B', data: get('NETWORK_TX_GB') }], { fmtY: v => v.toFixed(4), unit: ' GB' })}
+    </div>`;
+    root.innerHTML = `<div class="stack"><div style="display:flex;justify-content:flex-end">${rangeSel(hours)}</div>${graphs}
+      ${panel('Deployments', `<table><thead><tr><th>Status</th><th>Commit</th><th>Message</th><th>Author</th><th>Date</th><th></th></tr></thead><tbody>${hist.length ? hist.map(x => {
+        const st = (x.status || '').toUpperCase(), tone = st === 'SUCCESS' ? 'green' : st === 'FAILED' ? 'red' : st.includes('BUILD') || st === 'DEPLOYING' ? 'blue' : 'grey';
+        return `<tr><td>${pill(st || 'UNKNOWN', tone)}</td><td><span class="code">${esc(x.commit_hash || '—')}</span></td><td class="trunc">${esc((x.commit_message || '—').split('\n')[0])}</td><td>${esc(x.author || '—')}</td><td class="date">${fmtDate(x.created_at)}</td>
+          <td><button class="btn danger rollback" data-id="${esc(x.id)}" data-hash="${esc(x.commit_hash || '')}">Rollback</button></td></tr>`;
+      }).join('') : '<tr class="state-row"><td colspan="6">No deployments found.</td></tr>'}</tbody></table>`,
+        { flush: true, actions: '<button class="btn primary" id="redeploy"><i data-lucide="rocket"></i> Redeploy</button>' })}</div>`;
+    if (!m.error) drawCharts([
+      { id: 'rwCpu', series: [{ name: 'CPU', color: '#5B4FD9', data: get('CPU_USAGE') }], fmtY: v => v.toFixed(3), dateAxis: hours > 24 },
+      { id: 'rwMem', series: [{ name: 'Memory', color: '#22C55E', data: get('MEMORY_USAGE_GB') }], fmtY: v => v.toFixed(2), unit: ' GB', dateAxis: hours > 24 },
+      { id: 'rwNet', series: [{ name: 'Received', color: '#3B82F6', data: get('NETWORK_RX_GB') }, { name: 'Sent', color: '#F59E0B', data: get('NETWORK_TX_GB') }], fmtY: v => v.toFixed(4), unit: ' GB', dateAxis: hours > 24 },
+    ]);
+    $('#range').addEventListener('change', e => { hours = +e.target.value; draw(); });
+    $('#redeploy').addEventListener('click', async e => { if (!confirm('Trigger a new Railway deployment?')) return; e.currentTarget.disabled = true;
+      try { await api('/dashboard/deployments/redeploy', { method: 'POST' }); toast('Redeploy triggered'); setTimeout(draw, 4000); } catch { toast('Redeploy failed', true); } });
+    root.querySelectorAll('.rollback').forEach(b => b.addEventListener('click', async () => { if (!confirm(`Roll back to ${b.dataset.hash}?`)) return; b.disabled = true;
+      try { await api(`/dashboard/deployments/rollback/${b.dataset.id}`, { method: 'POST' }); toast('Rollback triggered'); setTimeout(draw, 4000); } catch { toast('Rollback failed', true); b.disabled = false; } }));
+    icons(); stamp();
+  }
+  root.innerHTML = loading(3); await draw(); every(draw, 60000);
+}
+
+async function pageApiLogs(root) {
+  let logs = [], onlyErr = false, filter = '';
+  root.innerHTML = `<div class="stack">${panel('API logs', `<div class="toolbar" style="border:none;padding:0 0 12px">${searchBox('q', 'Filter lines…')}${chipRow('lvl', [['all', 'All'], ['err', 'Errors & warnings']], 'all')}<span class="count-note" id="countNote"></span></div>
+      <div class="term short" id="term" style="height:440px"><div class="term-empty">Loading…</div></div>`, { sub: 'Latest lines from the Railway deployment', actions: '<button class="btn" id="reload"><i data-lucide="refresh-cw"></i> Reload</button>' })}
+    ${panel('Error breakdown', '<div id="errs"><div class="d-state">Loading…</div></div>', { sub: 'Non-2xx responses, this week vs last', flush: true })}</div>`;
+  const draw = () => {
+    const shown = logs.filter(l => { const sev = (l.severity || 'INFO').toUpperCase(); return (!onlyErr || /ERR|WARN/.test(sev)) && (!filter || (l.message || '').toLowerCase().includes(filter)); });
+    $('#countNote').textContent = `${fmt(shown.length)} lines`;
+    $('#term').innerHTML = shown.length ? shown.map(l => { const sev = (l.severity || 'INFO').toUpperCase();
+      return `<div class="log-line ${/ERR/.test(sev) ? 'is-error' : ''}"><span class="log-ts">${clock(l.timestamp)}</span><span class="log-lvl ${esc(sev)}">${esc(sev)}</span><span class="log-msg">${esc(l.message || '')}</span></div>`; }).join('') : '<div class="term-empty">No lines.</div>';
+    $('#term').scrollTop = $('#term').scrollHeight;
+  };
+  const load = async () => {
+    try { logs = (await api('/dashboard/deployments/logs')).logs || []; draw(); } catch { $('#term').innerHTML = '<div class="term-empty" style="color:#F87171">Failed to fetch Railway logs.</div>'; }
+    try {
+      const e = await api('/dashboard/deployments/errors'); const rows = e.breakdown || [];
+      $('#errs').innerHTML = rows.length ? `<table><thead><tr><th>Endpoint</th><th>Method</th><th>Code</th><th>This week</th><th>Last week</th></tr></thead><tbody>${rows.map(r => {
+        const diff = (r.count_7d || 0) - (r.count_prev_7d || 0);
+        return `<tr><td><span class="code">${esc(r.path)}</span></td><td>${pill(esc(r.method), 'purple')}</td><td>${pill(r.status_code, r.status_code >= 500 ? 'red' : 'amber')}</td>
+          <td class="num">${fmt(r.count_7d)} ${diff ? `<span class="delta ${diff > 0 ? 'down' : 'up'}">${diff > 0 ? '↑' : '↓'}${Math.abs(diff)}</span>` : ''}</td><td class="num" style="color:var(--sub)">${fmt(r.count_prev_7d)}</td></tr>`; }).join('')}</tbody></table>`
+        : '<div class="d-empty">No errors this week 🎉</div>';
+    } catch { $('#errs').innerHTML = '<div class="d-state err">Failed to load errors.</div>'; }
+    icons(); stamp();
+  };
+  $('#q').addEventListener('input', e => { filter = e.target.value.trim().toLowerCase(); draw(); });
+  wireChips('lvl', v => { onlyErr = v === 'err'; draw(); });
+  $('#reload').addEventListener('click', load);
+  await load(); every(load, 30000);
+}
+
+/* ── App control ── */
+async function pageAppControl(root) {
+  root.innerHTML = loading(2);
+  const d = await api('/dashboard/ops/app-config');
+  const c = d.config, m = c.maintenance || {};
+  const inp = (id, label, val, ph, hint) => `<div class="field" style="margin-bottom:14px"><label for="${id}">${label}</label>
+    <input id="${id}" value="${esc(val || '')}" placeholder="${ph || ''}" autocomplete="off">${hint ? `<div class="page-sub" style="margin-top:5px">${hint}</div>` : ''}</div>`;
+  root.innerHTML = `<div class="stack">
+    <div class="banner ${m.on ? 'bad' : 'ok'}" id="liveBanner"><span class="dot ${m.on ? 'bad' : 'ok'}"></span><div><div class="banner-title">${m.on ? 'Maintenance mode is ON: users see the "back soon" screen' : 'App is running normally'}</div>
+      <div class="banner-sub">Minimum version <b>${esc(c.min_version || '1.0.0')}</b> · latest <b>${esc(c.latest_version || 'not set')}</b>. Phones pick up changes within about a minute.</div></div></div>
+    <div class="grid g-2">
+      ${panel('Maintenance mode', `
+        <label class="toggle" style="margin-bottom:14px;font-size:14px;color:var(--text);font-weight:600"><input type="checkbox" id="mOn" ${m.on ? 'checked' : ''}> Show the "back soon" screen to everyone</label>
+        <div class="field"><label for="mMsg">Message shown to users</label><input id="mMsg" maxlength="300" value="${esc(m.message || '')}" placeholder="We're making things better and will be back shortly."></div>
+        <div class="page-sub" style="margin-top:8px">Leave the message empty to use the default. Only works on app builds that include the update gate.</div>`,
+        { sub: 'Use when you deploy something risky or the backend needs to be down on purpose' })}
+      ${panel('Force update', `
+        ${inp('vMin', 'Minimum version', c.min_version, '1.5.2', 'Anyone below this is blocked until they update. Set it to the newest version to force everyone.')}
+        ${inp('vLatest', 'Latest version', c.latest_version, '1.5.2', 'Anyone below this sees a dismissible "new version available" card.')}`,
+        { sub: 'Compared against the version number inside the app' })}
+    </div>
+    ${panel('Update links', `<div class="grid g-3">${inp('uAnd', 'Android link', c.android_url, 'https://play.google.com/store/apps/details?id=com.rollout.app')}
+      ${inp('uIos', 'iOS link', c.ios_url, 'https://apps.apple.com/app/…')}${inp('uAny', 'Fallback link', c.update_url, 'https://rollouts.in/downloads.html', 'Used when the platform link is empty.')}</div>`,
+      { sub: 'Where the "Update Rollout" button sends people' })}
+    <div style="display:flex;gap:12px;align-items:center"><button class="btn primary" id="saveCfg" style="padding:11px 22px;font-size:14px">Save changes</button>
+      <span class="page-sub" id="saveNote">Published to ${esc(d.public_url)}</span></div>
+  </div>`;
+  $('#saveCfg').addEventListener('click', async e => {
+    const b = e.currentTarget, on = $('#mOn').checked, minV = $('#vMin').value.trim();
+    if (on && !m.on && !confirm('Turn maintenance mode ON? Every user will see the "back soon" screen until you turn it off.')) return;
+    if (minV && minV !== c.min_version && !confirm(`Block every user on a version below ${minV}? They will not be able to use the app until they update.`)) return;
+    b.disabled = true; b.textContent = 'Saving…';
+    try {
+      await api('/dashboard/ops/app-config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        min_version: minV, latest_version: $('#vLatest').value.trim(), update_url: $('#uAny').value.trim(),
+        android_url: $('#uAnd').value.trim(), ios_url: $('#uIos').value.trim(), maintenance: { on, message: $('#mMsg').value.trim() } }) });
+      toast('Saved. Phones will pick it up within about a minute.'); pageAppControl(root);
+    } catch (err) { toast(err.message === '422' ? 'Check the version numbers (like 1.5.2) and that links start with https://' : 'Save failed', true); b.disabled = false; b.textContent = 'Save changes'; }
+  });
+  stamp();
+}
+
+/* ═══════════════════════════ ROUTER / SHELL ═══════════════════════════ */
+/* Ops sections in the sidebar (users, rooms and revenue live on /admin); the pages inside a section are tabs (#/section/tab). */
+const NAV = [
+  { id: 'services', label: 'Services', sub: 'Every running service, whether it is healthy, and its vitals', tabs: [
+    { id: '', label: 'All services', fn: pageServices },
+    { id: 'api', label: 'API · Railway', fn: pageRailway },
+    { id: 'worker', label: 'Face worker', fn: pageWorker },
+    { id: 'jobs', label: 'Face job queue', fn: pageJobs },
+    { id: 'server', label: 'Server · Hetzner', fn: pageHetzner },
+  ]},
+  { id: 'logs', label: 'Logs', sub: 'What every service is saying, errors first', tabs: [
+    { id: '', label: 'All errors', fn: pageAllErrors },
+    { id: 'api', label: 'API server', fn: pageApiLogs },
+    { id: 'face', label: 'Face worker', fn: r => pageWorkerLogs(r, 'face') },
+    { id: 'video', label: 'Video worker', fn: r => pageWorkerLogs(r, 'video') },
+  ]},
+  { id: 'control', label: 'Control', sub: 'Force updates and maintenance mode for the mobile app', tabs: [
+    { id: '', label: 'App control', fn: pageAppControl },
+  ]},
+];
+const SECTIONS = Object.fromEntries(NAV.map(s => [s.id, s]));
+// Links and bookmarks from the old one-page-per-item layout.
+const LEGACY = { users: 'overview/users', rooms: 'overview/rooms', waitlist: 'overview/waitlist', worker: 'services/worker', jobs: 'services/jobs',
+  status: 'services', hetzner: 'services/server', railway: 'services/api', wlogs: 'logs/face', apilogs: 'logs/api', appctl: 'control' };
+let currentId = 'services', pulse = null;
+
+function renderNav() {
+  $('#sideNav').innerHTML = `<div class="nav-group"><a class="nav-item" href="/admin/"><span>← Admin dashboard</span></a>${NAV.map(s => {
+    let badge = '';
+    if (s.id === 'services') {
+      const down = sideCounts.svcBad || 0, warn = sideCounts.svcWarn || 0;
+      badge = down ? `<span class="nav-badge bad">${down} down</span>` : pulse && !pulse.worker_alive && pulse.heartbeat_configured ? '<span class="nav-badge bad">worker off</span>'
+        : warn ? `<span class="nav-badge warn">${warn}</span>` : '';
+    }
+    return `<a class="nav-item ${s.id === currentId ? 'active' : ''}" href="#/${s.id}"><span>${s.label}</span>${badge}</a>`;
+  }).join('')}</div>`;
+  icons();
+}
+function renderTabs(sec, tab) {
+  const el = $('#tabs');
+  el.style.display = sec.tabs.length > 1 ? '' : 'none';
+  el.innerHTML = sec.tabs.map(t => `<a class="tab ${t === tab ? 'on' : ''}" href="#/${sec.id}${t.id ? '/' + t.id : ''}">${t.label}</a>`).join('');
+}
+
+async function route() {
+  const h = location.hash.replace(/^#\/?/, '');
+  if (LEGACY[h]) { location.replace('#/' + LEGACY[h]); return; }
+  const [secId, tabId = ''] = h.split('/');
+  const sec = SECTIONS[secId] || NAV[0], tab = sec.tabs.find(t => t.id === tabId) || sec.tabs[0];
+  currentId = sec.id; timers.forEach(clearInterval); timers = []; closeDrawer(); document.body.classList.remove('nav-open');
+  renderNav(); renderTabs(sec, tab); window.scrollTo(0, 0);
+  $('#pageTitle').textContent = sec.label; $('#pageSub').textContent = sec.sub;
+  document.title = `${tab.id ? tab.label : sec.label} — Rollout Ops`;
+  const root = $('#content'); lastRefreshFn = () => tab.fn(root);
+  try { await tab.fn(root); } catch (e) {
+    if (String(e.message) !== '401') root.innerHTML = `<div class="banner bad"><span class="dot bad"></span><div><div class="banner-title">Couldn’t load ${esc(tab.label)}</div><div class="banner-sub">${esc(e.message)} — the backend may be redeploying. Try Refresh.</div></div></div>`;
+  }
+  icons();
+}
+
+async function refreshPulse() {
+  try {
+    pulse = await api('/dashboard/ops/pulse');
+    $('#footEngine').textContent = pulse.engine;
+    const dot = $('#footDot'), txt = $('#footWorker');
+    if (!pulse.heartbeat_configured) { dot.className = 'dot warn'; txt.innerHTML = 'Worker: <b>no heartbeat table</b>'; }
+    else if (pulse.worker_alive) { dot.className = 'dot ok'; txt.innerHTML = `Worker <b>online</b> · ${pulse.pending} queued`; }
+    else { dot.className = 'dot bad'; txt.innerHTML = 'Worker <b>offline</b>'; }
+    renderNav();
+  } catch {}
+}
+
+// Signing in happens on /admin; this page only borrows its token.
+function readToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } }
+function lock() { try { localStorage.removeItem(TOKEN_KEY); } catch {} TOKEN = ''; timers.forEach(clearInterval); timers = []; location.replace('/admin/'); }
+
+/* ── start ── */
+async function start() {
+  TOKEN = readToken();
+  if (!TOKEN) { location.replace('/admin/'); return; }
+  $('#gate').classList.add('hidden'); $('#app').style.display = 'block';
+  renderNav(); refreshPulse(); setInterval(() => { if (TOKEN && !document.hidden) refreshPulse(); }, 30000);
+  await route();
+}
+
+$('#logoutBtn').addEventListener('click', lock);
+$('#menuBtn').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+$('#drawerClose').addEventListener('click', closeDrawer); $('#drawerOverlay').addEventListener('click', closeDrawer);
+$('#refreshBtn').addEventListener('click', async e => { const b = e.currentTarget; b.classList.add('spinning'); try { await lastRefreshFn(); refreshPulse(); } catch {} b.classList.remove('spinning'); icons(); });
+window.addEventListener('hashchange', () => { if (TOKEN) route(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+function applyTheme(dark) {
+  if (dark) document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme;
+  try { dark ? localStorage.setItem('rollout_admin_theme', 'dark') : localStorage.removeItem('rollout_admin_theme'); } catch {}
+  $('#themeBtn').textContent = dark ? 'Light' : 'Dark';
+}
+$('#themeBtn').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme !== 'dark'));
+applyTheme(document.documentElement.dataset.theme === 'dark');
+icons();
+{ const tag = document.querySelector('.side-tag'); if (tag) { tag.textContent = 'Ops · ' + SERVERS[SERVER].label; if (SERVER === 'production') tag.style.color = 'var(--red)'; } }
+start();
+</script>
+</body>
+</html>
