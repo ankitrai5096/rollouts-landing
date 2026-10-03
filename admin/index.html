@@ -639,6 +639,8 @@ async function pageRoom(root, id) {
           : `<button class="btn sm" data-role="organiser" data-id="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Make organiser</button>`}
           ${m.banned ? `<button class="btn sm" data-unblock="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Unblock</button>` : `<button class="btn sm danger" data-block="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Block</button>`}</div>`}</td></tr>`).join('')}
       </tbody></table></div></div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Activity</div><div class="panel-sub">Who did what in this event, newest first: the creator, organisers and the Rollout admin.</div></div></div>
+      <div id="act"><div class="state">Loading…</div></div></section>
     ${d.payments.length ? `<section class="card"><div class="panel-head"><div class="panel-title">Payments for this event</div></div><div class="panel-body" style="padding:8px 0 0">${paymentsTable(d.payments, { hideRoom: true })}</div></section>` : ''}
     <section class="card"><div class="panel-head"><div><div class="panel-title">Media</div><div class="panel-sub">Newest first. Tap to open; delete removes the file for everyone.</div></div>
       <div class="chips" id="mediaKind"><button class="chip on" data-v="photo" type="button">Photos (${fmt(c.photos)})</button><button class="chip" data-v="video" type="button">Videos (${fmt(c.videos)})</button></div></div>
@@ -744,6 +746,22 @@ async function pageRoom(root, id) {
   $('#mediaKind').addEventListener('click', e => { if (!e.target.dataset.v) return; kind = e.target.dataset.v; page = 1;
     $$('#mediaKind .chip').forEach(ch => ch.classList.toggle('on', ch === e.target)); loadMedia(); });
   loadMedia();
+
+  // activity history
+  const actBox = $('#act'); let actItems = [];
+  const drawActivity = more => {
+    if (!actItems.length) { actBox.innerHTML = '<div class="empty">Nothing yet.</div>'; return; }
+    actBox.innerHTML = `<div class="table-wrap"><table><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody>${actItems.map(it =>
+      `<tr><td style="white-space:nowrap">${fmtDT(it.created_at)}</td><td>${it.actor_role === 'admin' ? '' : esc(it.actor_name || 'Deleted user') + ' '}${roleLabel(it.actor_role)}</td><td>${describeActivity(it)}</td></tr>`).join('')}</tbody></table></div>` +
+      (more ? '<div class="pager"><span></span><div class="btns"><button class="btn sm" id="actMore" type="button">Show older</button></div></div>' : '');
+    $('#actMore')?.addEventListener('click', loadActivity);
+  };
+  const loadActivity = async () => {
+    const before = actItems.length ? `&before=${encodeURIComponent(actItems[actItems.length - 1].created_at)}` : '';
+    try { const r = await api(`/rooms/${id}/activity?limit=50${before}`); actItems = actItems.concat(r.items); drawActivity(r.items.length === 50); }
+    catch (e) { actBox.innerHTML = `<div class="empty">Couldn't load the history: ${esc(e.message)}</div>`; }
+  };
+  loadActivity();
 }
 
 function lightbox(p) {
@@ -759,6 +777,32 @@ function lightbox(p) {
 }
 
 /* ═══════════════ REVENUE ═══════════════ */
+// One line of an event's history: "deleted 3 photos", "blocked Sam"…
+const TIER_NAME = { normal: 'Free', large: 'Large', extra_large: 'Extra Large', organised: 'Organised' };
+function describeActivity(it) {
+  const d = it.detail || {}, who = esc(d.name || 'someone');
+  switch (it.action) {
+    case 'photos_deleted': {
+      const bits = [d.photos ? `${d.photos} ${d.photos === 1 ? 'photo' : 'photos'}` : '', d.videos ? `${d.videos} ${d.videos === 1 ? 'video' : 'videos'}` : ''].filter(Boolean);
+      return `deleted ${bits.join(' and ') || 'a photo'} added by someone else`;
+    }
+    case 'member_blocked': return `blocked <b>${who}</b>`;
+    case 'member_unblocked': return `unblocked <b>${who}</b>`;
+    case 'role_changed': return d.role === 'organiser' ? `made <b>${who}</b> an organiser` : `made <b>${who}</b> a member again`;
+    case 'privacy_changed': {
+      const parts = [];
+      if (d.upload_mode) parts.push(d.upload_mode === 'organisers' ? 'only organisers can add photos' : 'everyone can add photos');
+      if (d.view_mode) parts.push(d.view_mode === 'own' ? 'members see only their own photos' : 'members see all photos');
+      return `changed privacy: ${parts.join(', ')}`;
+    }
+    case 'upload_link_created': return 'created a new upload link';
+    case 'upload_link_turned_off': return 'turned the upload link off';
+    case 'tier_changed': return `moved the event from ${esc(TIER_NAME[d.from] || d.from)} to ${esc(TIER_NAME[d.to] || d.to)}`;
+    default: return esc(it.action);
+  }
+}
+const roleLabel = r => r === 'admin' ? '<span class="pill violet">Rollout admin</span>' : r === 'creator' ? '<span class="pill violet">Creator</span>' : '<span class="pill blue">Organiser</span>';
+
 function paymentsTable(items, { hideUser = false, hideRoom = false } = {}) {
   if (!items.length) return '<div class="empty">No payments.</div>';
   return `<div class="table-wrap"><table><thead><tr>${hideUser ? '' : '<th>Paid by</th>'}<th>When</th><th>Product</th><th class="num">Amount</th><th>Status</th>${hideRoom ? '' : '<th>Event</th>'}</tr></thead><tbody>
