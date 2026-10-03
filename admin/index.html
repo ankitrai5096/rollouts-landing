@@ -155,8 +155,8 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .hero .meta { color: var(--sub); font-size: 12.5px; display: flex; gap: 6px 14px; flex-wrap: wrap; margin-top: 2px; }
 .hero .grow { flex: 1; min-width: 200px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--border-soft); border-top: 1px solid var(--border-soft); }
-.fact { background: var(--surface); padding: 12px 18px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); background: var(--surface); border-top: 1px solid var(--border-soft); overflow: hidden; }
+.fact { background: var(--surface); padding: 12px 18px; border-right: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); margin: 0 -1px -1px 0; }
 .fact .k { font-size: 11.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
 .fact .v { font-weight: 600; margin-top: 2px; word-break: break-word; }
 .tier-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -366,6 +366,10 @@ function fetchT(url, opts = {}, ms = 45000) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
   return fetch(url, { ...opts, signal: ctl.signal }).finally(() => clearTimeout(t));
 }
+// Click and input handlers a page puts on #content are removed when the next page is drawn, so they
+// don't pile up as you move between pages (they used to fire several times after a few rooms).
+function listen(root, type, fn) { (root._hs = root._hs || []).push([type, fn]); root.addEventListener(type, fn); }
+function clearListeners(root) { (root._hs || []).forEach(([t, f]) => root.removeEventListener(t, f)); root._hs = []; }
 let routeSeq = 0;
 async function api(path, opts = {}) {
   const seq = routeSeq, isGet = !opts.method || opts.method === 'GET';
@@ -583,7 +587,7 @@ async function pageRooms(root) {
     $('#list').innerHTML = d.items.length ? `<div class="table-wrap"><table><thead><tr><th>Event</th><th>Organiser</th><th>Tier</th><th class="num">People</th><th class="num">Photos</th><th>Created</th><th>Expires</th></tr></thead><tbody>
       ${d.items.map(r => `<tr class="click" data-id="${r.id}"><td><div class="who"><div class="emoji">${icon(r.emoji, r.name)}</div><div class="t"><div class="n">${esc(r.name)}</div></div></div></td>
         <td><div class="who"><div class="t"><div class="n">${esc(r.creator?.name || '—')}</div><div class="e">${esc(r.creator?.email || '')}</div></div></div></td>
-        <td>${tierPill(r.event_type)} ${r.status === 'awaiting_payment' ? '<span class="pill amber">Awaiting payment</span>' : ''}${r.pending_upgrade_to ? '<span class="pill amber">Upgrade pending</span>' : ''}${r.is_admin_free ? '<span class="pill green">Comped</span>' : ''}</td>
+        <td>${tierPill(r.event_type)} ${r.status === 'awaiting_payment' ? '<span class="pill amber">Awaiting payment</span>' : ''}${r.pending_upgrade_to ? '<span class="pill amber">Upgrade pending</span>' : ''}${r.is_admin_free ? '<span class="pill green">Comped</span>' : ''}${r.upload_mode === 'organisers' ? ' <span class="pill">Organisers upload</span>' : ''}${r.view_mode === 'own' ? ' <span class="pill">Members see own</span>' : ''}</td>
         <td class="num">${fmt(r.member_count)}</td><td class="num">${fmt(r.photo_count)}</td><td>${fmtDate(r.created_at)}</td><td>${fmtDate(r.expires_at)}</td></tr>`).join('')}
       </tbody></table></div>${pager(d, p => { st.page = p; load(); })}` : '<div class="empty">No events match.</div>';
     $$('#list tr.click').forEach(tr => tr.addEventListener('click', () => location.hash = '#/rooms/' + tr.dataset.id));
@@ -610,18 +614,30 @@ async function pageRoom(root, id) {
         <div class="fact"><div class="k">Videos</div><div class="v">${fmt(c.videos)}</div></div>
         <div class="fact"><div class="k">People</div><div class="v">${fmt(c.members)}${r.member_limit ? ` / ${r.member_limit}` : ''}${c.blocked ? ` · ${c.blocked} blocked` : ''}</div></div>
         <div class="fact"><div class="k">Expires</div><div class="v">${fmtDT(r.expires_at)}</div></div>
+        <div class="fact"><div class="k">Adding photos</div><div class="v">${r.upload_mode === 'organisers' ? 'Only organisers' : 'Everyone'}</div></div>
+        <div class="fact"><div class="k">Members see</div><div class="v">${r.view_mode === 'own' ? 'Only their own photos' : 'All photos'}</div></div>
         <div class="fact"><div class="k">Room id</div><div class="v mono">${esc(r.id)}</div></div>
       </div></section>
     <section class="card"><div class="panel-head"><div><div class="panel-title">Tier</div><div class="panel-sub">Moves the event without a payment. Everyone in it gets a notification.${r.pending_upgrade_to ? ' The organiser’s pending upgrade is cancelled.' : ''}</div></div></div>
       <div class="panel-body"><div class="tier-row"><div class="seg" id="tierSeg">${[['normal', 'Free'], ['large', 'Large'], ['extra_large', 'Extra Large']].map(([v, l]) =>
         `<button type="button" data-v="${v}" class="${v === pick ? 'on' : ''} ${v === r.event_type ? 'cur' : ''}">${l}${v === r.event_type ? ' (current)' : ''}</button>`).join('')}</div>
         <button class="btn primary" id="tierBtn" type="button" disabled>Move event</button></div></div></section>
-    <section class="card"><div class="panel-head"><div><div class="panel-title">Participants</div><div class="panel-sub">Blocking removes them from the event and stops them rejoining with the link. Their photos stay.</div></div></div>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Privacy</div><div class="panel-sub">The same two settings an organiser has in the app. They apply within seconds and members are not notified. Organisers always see everything.</div></div></div>
+      <div class="panel-body">
+        <div class="field"><label>Who can add photos and videos</label><div class="seg" id="uploadSeg">${[['everyone', 'Everyone in the event'], ['organisers', 'Only organisers']].map(([v, l]) =>
+          `<button type="button" data-v="${v}" class="${v === r.upload_mode ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+        <div class="field" style="margin-bottom:0"><label>What members see</label><div class="seg" id="viewSeg">${[['all', 'All photos'], ['own', 'Only their own photos']].map(([v, l]) =>
+          `<button type="button" data-v="${v}" class="${v === r.view_mode ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      </div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Participants</div><div class="panel-sub">Organisers can change the event's privacy settings. Blocking removes someone from the event and stops them rejoining with the link; their photos stay.</div></div></div>
       <div class="panel-body" style="padding:8px 0 0"><div class="table-wrap"><table><thead><tr><th>Person</th><th>Role</th><th class="num">Uploads</th><th>Joined</th><th></th></tr></thead><tbody>
       ${d.members.map(m => `<tr><td><div class="who">${avatar(m)}<div class="t"><div class="n"><a href="#/users/${m.id}">${esc(m.name || 'User')}</a></div><div class="e">${esc(m.email || '')}</div></div></div></td>
-        <td>${m.is_creator ? '<span class="pill violet">Organiser</span>' : 'Guest'} ${m.banned ? '<span class="pill red">Blocked</span>' : ''}</td>
+        <td>${m.is_creator ? '<span class="pill violet">Creator</span>' : m.role === 'organiser' ? '<span class="pill violet">Organiser</span>' : 'Guest'} ${m.banned ? '<span class="pill red">Blocked</span>' : ''}</td>
         <td class="num">${fmt(m.uploads)}</td><td>${fmtDate(m.joined_at)}</td>
-        <td class="num">${m.is_creator ? '' : m.banned ? `<button class="btn sm" data-unblock="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Unblock</button>` : `<button class="btn sm danger" data-block="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Block</button>`}</td></tr>`).join('')}
+        <td class="num">${m.is_creator ? '' : `<div class="actions" style="justify-content:flex-end">${m.banned ? '' : m.role === 'organiser'
+          ? `<button class="btn sm" data-role="member" data-id="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Remove organiser</button>`
+          : `<button class="btn sm" data-role="organiser" data-id="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Make organiser</button>`}
+          ${m.banned ? `<button class="btn sm" data-unblock="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Unblock</button>` : `<button class="btn sm danger" data-block="${m.id}" data-name="${esc(m.name || 'User')}" type="button">Block</button>`}</div>`}</td></tr>`).join('')}
       </tbody></table></div></div></section>
     ${d.payments.length ? `<section class="card"><div class="panel-head"><div class="panel-title">Payments for this event</div></div><div class="panel-body" style="padding:8px 0 0">${paymentsTable(d.payments, { hideRoom: true })}</div></section>` : ''}
     <section class="card"><div class="panel-head"><div><div class="panel-title">Media</div><div class="panel-sub">Newest first. Tap to open; delete removes the file for everyone.</div></div>
@@ -659,8 +675,37 @@ async function pageRoom(root, id) {
     catch (e) { toast(e.message, true); }
   });
 
+  // privacy settings
+  const privacy = (segId, field, current, texts) => $('#' + segId).addEventListener('click', async e => {
+    const v = e.target.closest('button')?.dataset.v; if (!v || v === current) return;
+    const ok = await confirmDialog({ title: texts[v][0], confirm: 'Change', body: texts[v][1] + ' Members are not notified.' });
+    if (!ok) return;
+    try { await api(`/rooms/${id}/privacy`, { method: 'POST', body: JSON.stringify({ [field]: v }) }); toast('Privacy updated.'); route(); }
+    catch (err) { toast(err.message, true); }
+  });
+  privacy('uploadSeg', 'upload_mode', r.upload_mode, {
+    everyone: ['Let everyone add photos?', 'Anyone in the event can add photos and videos again.'],
+    organisers: ['Only organisers can add photos?', 'Members can still look, but only organisers can add photos and videos. Uploads from members are refused straight away.'],
+  });
+  privacy('viewSeg', 'view_mode', r.view_mode, {
+    all: ['Show members all photos?', 'Every member sees every photo in the event.'],
+    own: ['Show members only their own photos?', 'Members see only the photos they added and the ones they are in, and only their own videos. Organisers still see everything.'],
+  });
+
+  // make organiser / back to member
+  listen(root, 'click', async e => {
+    const b = e.target.closest('[data-role]'); if (!b) return;
+    const role = b.dataset.role, uid = b.dataset.id;
+    const ok = await confirmDialog({ title: role === 'organiser' ? `Make ${b.dataset.name} an organiser?` : `Make ${b.dataset.name} a member again?`, confirm: role === 'organiser' ? 'Make organiser' : 'Make member',
+      body: role === 'organiser' ? 'They can change this event\u2019s privacy settings and add photos even when uploads are organisers-only. They get a notification.' : 'They lose organiser rights in this event.' });
+    if (!ok) return;
+    try { const res = await api(`/rooms/${id}/members/${uid}/role`, { method: 'POST', body: JSON.stringify({ role }) });
+      toast(role === 'organiser' ? `Made an organiser${res.notified ? ' and told by push' : ''}.` : 'Back to member.'); route(); }
+    catch (err) { toast(err.message, true); }
+  });
+
   // block / unblock
-  root.addEventListener('click', async e => {
+  listen(root, 'click', async e => {
     const b = e.target.closest('[data-block],[data-unblock]'); if (!b) return;
     const block = !!b.dataset.block, uid = b.dataset.block || b.dataset.unblock;
     const ok = await confirmDialog({ title: `${block ? 'Block' : 'Unblock'} ${b.dataset.name}?`, danger: block, confirm: block ? 'Block' : 'Unblock',
@@ -1027,7 +1072,7 @@ async function pageApp(root) {
   };
   const sync = () => { const n = changes().length; $('#saveCfg').disabled = !n; $('#cfgNote').textContent = n ? `${n} unsaved ${n === 1 ? 'change' : 'changes'}` : 'No changes';
     $('#mCount').textContent = `${$('#mMsg').value.length}/300`; };
-  root.addEventListener('input', sync); root.addEventListener('change', sync); sync();
+  listen(root, 'input', sync); listen(root, 'change', sync); sync();
   $('#saveCfg').addEventListener('click', async () => {
     const list = changes();
     const ok = await confirmDialog({ title: 'Save app settings?', danger: form().maintenance.on && !c.maintenance?.on, confirm: 'Save',
@@ -1064,6 +1109,7 @@ async function route() {
   lastRoute = location.hash;
   setTitle(title, sub);
   const root = $('#content');
+  clearListeners(root);
   root.innerHTML = '<div class="state">Loading…</div>';
   try {
     if (id && key === 'users') await pageUser(root, id);
