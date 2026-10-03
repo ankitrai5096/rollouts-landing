@@ -234,6 +234,11 @@ textarea.input { resize: vertical; min-height: 96px; line-height: 1.45; }
 .vitals b { color: var(--text); font-weight: 600; }
 .legend-row { display: flex; gap: 16px; font-size: 12.5px; color: var(--sub); align-items: center; flex-wrap: wrap; }
 .legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+.live { padding: 7px 18px; font-size: 12.5px; color: var(--sub); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.live.ok::before { background: var(--ok); }
+.live.bad { color: var(--bad); }
+.live.bad::before { background: var(--bad); }
 .term { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55; max-height: 560px; overflow: auto; padding: 10px 0; background: var(--surface-2); }
 .term .ln { display: flex; gap: 12px; padding: 1px 18px; white-space: pre-wrap; word-break: break-word; }
 .term .ln:hover { background: var(--primary-light); }
@@ -1034,23 +1039,58 @@ const LOG_TABS = [['errors', 'All errors'], ['api', 'API server'], ['face', 'Fac
 const clockTime = d => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
 const lvlClass = l => /ERR|CRIT|FATAL/i.test(l || '') ? 'err' : /WARN/i.test(l || '') ? 'warn' : '';
 
+// Runs `fn` on a timer, one run at a time, and says plainly whether it is working. A run that fails keeps
+// whatever is already on screen and is retried with a growing pause (up to 30 s); a run that hangs is given
+// up on after 30 s. It stops by itself once `alive()` is false (the page moved on), and catches up the moment
+// the tab is visible again. fn throws to report a failure.
+function livePoll(fn, { every, keep, alive, onStatus }) {
+  let busy = false, startedAt = 0, lastOk = 0, fails = 0, nextAt = 0, err = '', gen = 0;
+  const span = s => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`);
+  const status = () => {
+    const now = Date.now(), ago = lastOk ? Math.max(0, Math.round((now - lastOk) / 1000)) : null;
+    if (document.hidden) return onStatus('idle', 'Paused while this tab is in the background');
+    if (fails) return onStatus('bad', `Can't update: ${err}. ${ago == null ? 'Nothing has loaded yet' : `Last update ${span(ago)} ago`}. Retrying…`);
+    if (ago == null) return onStatus('idle', 'Connecting…');
+    if (now - lastOk > Math.max(every * 3, 20000)) return onStatus('bad', `No update for ${span(ago)}. Retrying…`);
+    onStatus('ok', `Live · updated ${span(ago)} ago`);
+  };
+  const run = async () => {
+    if (busy && Date.now() - startedAt < 30000) return;
+    const my = ++gen; busy = true; startedAt = Date.now();
+    try { await fn(); if (my === gen) { lastOk = Date.now(); fails = 0; err = ''; nextAt = lastOk + every; } }
+    catch (e) { if (my === gen) { fails++; err = (e && e.message) || 'error'; nextAt = Date.now() + Math.min(every * 2 ** Math.min(fails, 4), 30000); } }
+    finally { if (my === gen) busy = false; }
+    status();
+  };
+  const onVis = () => { if (!document.hidden) { nextAt = 0; run(); } status(); };
+  document.addEventListener('visibilitychange', onVis);
+  const id = setInterval(() => {
+    if (!alive()) { clearInterval(id); document.removeEventListener('visibilitychange', onVis); return; }
+    status();
+    if (!document.hidden && Date.now() >= nextAt) run();
+  }, 1000);
+  keep(id);
+  return { now: () => { nextAt = 0; return run(); } };
+}
+
 // opts.title: show it instead of the tab links (used inside the Services page); opts.register: where the
 // refresh timers go, so that page can stop them when another part is picked.
 async function pageLogs(root, tab, opts = {}) {
   tab = LOG_TABS.some(t => t[0] === tab) ? tab : 'errors';
   const keep = opts.register || (id => timers.push(id));
-  let q = '', errorsOnly = false, hours = 24, lines = [];
+  let q = '', errorsOnly = false, hours = 24, lines = [], lastErr = '';
   root.innerHTML = `<section class="card"><div class="toolbar">${opts.title ? `<div class="panel-title" style="margin-right:6px">${esc(opts.title)}</div>` : `<div class="chips">${LOG_TABS.map(([v, l]) => `<a class="chip ${v === tab ? 'on' : ''}" href="#/logs/${v}" style="text-decoration:none">${l}</a>`).join('')}</div>`}
       <input class="input" id="lq" placeholder="Filter lines">
       ${tab === 'errors' ? `<select class="input" id="lh" style="width:auto">${[[1, 'Last hour'], [24, 'Last 24 hours'], [72, 'Last 3 days'], [168, 'Last 7 days']].map(([v, l]) => `<option value="${v}" ${v === 24 ? 'selected' : ''}>${l}</option>`).join('')}</select>`
         : '<button class="chip" id="lerr" type="button">Errors & warnings only</button>'}
       <span class="muted" id="lcount" style="font-size:12.5px"></span></div>
+    <div class="live idle" id="lstat">Connecting…</div>
     <div id="lbody"><div class="state">Loading…</div></div></section>`;
   const body = $('#lbody');
   const render = () => {
     const shown = lines.filter(l => (!errorsOnly || lvlClass(l.level)) && (!q || (l.message || '').toLowerCase().includes(q)));
     $('#lcount').textContent = `${fmt(shown.length)} lines`;
-    if (!shown.length) { body.innerHTML = `<div class="empty">${lines.length ? 'No lines match.' : tab === 'errors' ? 'No errors in this window.' : tab === 'video' ? 'No log lines yet. The video worker starts sending logs once the new version is running on the server.' : 'No log lines.'}</div>`; return; }
+    if (!shown.length) { body.innerHTML = `<div class="empty">${lines.length ? 'No lines match.' : lastErr ? esc(lastErr) : tab === 'errors' ? 'No errors in this window.' : tab === 'video' ? 'No log lines yet. The video worker starts sending logs once the new version is running on the server.' : 'No log lines.'}</div>`; return; }
     const old = body.querySelector('.term'), hadOld = !!old;
     const atBottom = old && old.scrollHeight - old.scrollTop - old.clientHeight < 40;
     body.innerHTML = `<div class="term">${shown.map(l => `<div class="ln ${lvlClass(l.level)}"><span class="ts">${esc(clockTime(l.at))}</span>${tab === 'errors' ? `<span class="src">${esc(l.source)}</span>` : ''}<span class="lv">${esc((l.level || '').slice(0, 5))}</span><span class="msg">${esc(l.message)}</span></div>`).join('')}</div>`;
@@ -1059,28 +1099,35 @@ async function pageLogs(root, tab, opts = {}) {
   $('#lq').addEventListener('input', debounce(e => { q = e.target.value.toLowerCase(); render(); }, 150));
   $('#lerr')?.addEventListener('click', e => { errorsOnly = !errorsOnly; e.target.classList.toggle('on', errorsOnly); render(); });
 
+  const poll = (fn, every) => livePoll(fn, {
+    every, keep, alive: () => body.isConnected,
+    onStatus: (state, text) => { const el = root.querySelector('#lstat'); if (el) { el.className = 'live ' + state; el.textContent = text; } },
+  });
+  // Each loader throws when it cannot get lines, so the status line goes red and the lines already shown stay.
   if (tab === 'errors') {
-    const load = async () => { const d = await api(`/dashboard/ops/errors/recent?hours=${hours}`); lines = d.items; render(); };
-    $('#lh').addEventListener('change', e => { hours = Number(e.target.value); load(); });
-    await load(); keep(setInterval(() => { if (!document.hidden) load().catch(() => {}); }, 30000));
+    const p = poll(async () => { const d = await api(`/dashboard/ops/errors/recent?hours=${hours}`); lines = d.items; lastErr = ''; render(); }, 15000);
+    $('#lh').addEventListener('change', e => { hours = Number(e.target.value); p.now(); });
+    await p.now();
   } else if (tab === 'api') {
-    const load = async () => {
-      try { const d = await api('/dashboard/deployments/logs'); lines = (d.logs || []).map(l => ({ at: l.timestamp, level: l.severity, message: l.message })); }
-      catch (e) { body.innerHTML = `<div class="empty">Couldn't read the API logs: ${esc(e.message)}</div>`; return; }
-      if (!lines.length) { body.innerHTML = '<div class="empty">No lines came back. Railway log access may not be set up on this server (RAILWAY_API_TOKEN).</div>'; $('#lcount').textContent = ''; return; }
+    // Railway's log feed, read fresh on each refresh: a snapshot of the latest lines, not a stream.
+    await poll(async () => {
+      let d;
+      try { d = await api('/dashboard/deployments/logs'); } catch (e) { lastErr = `Couldn't read the API logs: ${e.message}`; render(); throw e; }
+      lines = (d.logs || []).map(l => ({ at: l.timestamp, level: l.severity, message: l.message }));
+      lastErr = lines.length ? '' : 'No lines came back. Railway log access may not be set up on this server (RAILWAY_API_TOKEN).';
       render();
-    };
-    await load(); keep(setInterval(() => { if (!document.hidden) load().catch(() => {}); }, 15000));
+    }, 15000).now();
   } else {
     let lastId = 0;
-    const load = async () => {
-      const d = await api(`/dashboard/ops/worker/logs?source=${tab}&after_id=${lastId}&limit=${lastId ? 500 : 400}`);
-      if (!d.configured) { body.innerHTML = `<div class="empty">${esc(d.error || 'This worker is not sending logs yet.')}</div>`; return; }
+    await poll(async () => {
+      let d;
+      try { d = await api(`/dashboard/ops/worker/logs?source=${tab}&after_id=${lastId}&limit=${lastId ? 500 : 400}`); } catch (e) { lastErr = `Couldn't read the log: ${e.message}`; render(); throw e; }
+      if (!d.configured) { lastErr = d.error || 'This worker is not sending logs yet.'; render(); throw new Error(lastErr); }
+      lastErr = '';
       const fresh = d.logs.map(l => ({ id: l.id, at: l.created_at, level: l.level, message: l.message }));
       if (fresh.length) { lastId = fresh[fresh.length - 1].id; lines = lines.concat(fresh).slice(-2000); }
       render();
-    };
-    await load(); keep(setInterval(() => { if (!document.hidden) load().catch(() => {}); }, 5000));
+    }, 5000).now();
   }
 }
 
