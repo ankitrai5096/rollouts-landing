@@ -752,7 +752,7 @@ async function pageRoom(root, id) {
   const drawActivity = more => {
     if (!actItems.length) { actBox.innerHTML = '<div class="empty">Nothing yet.</div>'; return; }
     actBox.innerHTML = `<div class="table-wrap"><table><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody>${actItems.map(it =>
-      `<tr><td style="white-space:nowrap">${fmtDT(it.created_at)}</td><td>${it.actor_role === 'admin' ? '' : esc(it.actor_name || 'Deleted user') + ' '}${roleLabel(it.actor_role)}${it.actor_email ? `<div class="muted" style="font-size:12px">${esc(it.actor_email)}</div>` : ''}</td><td>${describeActivity(it)}</td></tr>`).join('')}</tbody></table></div>` +
+      `<tr><td style="white-space:nowrap">${fmtDT(it.created_at)}</td><td>${it.actor_role === 'admin' ? '' : esc(it.actor_name || 'Deleted user') + ' '}${roleLabel(it.actor_role)}${it.actor_email ? `<div class="muted" style="font-size:12px">${esc(it.actor_email)}</div>` : ''}</td><td>${describeActivity(it)}${it.target_email ? `<div class="muted" style="font-size:12px">${esc(it.target_email)}</div>` : ''}</td></tr>`).join('')}</tbody></table></div>` +
       (more ? '<div class="pager"><span></span><div class="btns"><button class="btn sm" id="actMore" type="button">Show older</button></div></div>' : '');
     $('#actMore')?.addEventListener('click', loadActivity);
   };
@@ -780,8 +780,7 @@ function lightbox(p) {
 // One line of an event's history: "deleted 3 photos", "blocked Sam"…
 const TIER_NAME = { normal: 'Free', large: 'Large', extra_large: 'Extra Large', organised: 'Organised' };
 function describeActivity(it) {
-  // The person it was done to, with their email: two people can share a name.
-  const d = it.detail || {}, who = esc(d.name || 'someone') + (it.target_email ? ` (${esc(it.target_email)})` : '');
+  const d = it.detail || {}, who = esc(d.name || 'someone');
   switch (it.action) {
     case 'photos_deleted': {
       const bits = [d.photos ? `${d.photos} ${d.photos === 1 ? 'photo' : 'photos'}` : '', d.videos ? `${d.videos} ${d.videos === 1 ? 'video' : 'videos'}` : ''].filter(Boolean);
