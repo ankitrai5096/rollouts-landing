@@ -748,17 +748,19 @@ async function pageRoom(root, id) {
   loadMedia();
 
   // activity history
+  // 10 entries at a time; "Show more" adds 10 more, so a busy event's card stays short.
+  const ACT_PAGE = 10;
   const actBox = $('#act'); let actItems = [];
   const drawActivity = more => {
     if (!actItems.length) { actBox.innerHTML = '<div class="empty">Nothing yet.</div>'; return; }
     actBox.innerHTML = `<div class="table-wrap"><table><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody>${actItems.map(it =>
       `<tr><td style="white-space:nowrap">${fmtDT(it.created_at)}</td><td>${it.actor_role === 'admin' ? '' : esc(it.actor_name || 'Deleted user') + ' '}${roleLabel(it.actor_role)}${it.actor_email ? `<div class="muted" style="font-size:12px">${esc(it.actor_email)}</div>` : ''}</td><td>${describeActivity(it)}${it.target_email ? `<div class="muted" style="font-size:12px">${esc(it.target_email)}</div>` : ''}</td></tr>`).join('')}</tbody></table></div>` +
-      (more ? '<div class="pager"><span></span><div class="btns"><button class="btn sm" id="actMore" type="button">Show older</button></div></div>' : '');
+      (more ? '<div class="pager"><span></span><div class="btns"><button class="btn sm" id="actMore" type="button">Show more</button></div></div>' : '');
     $('#actMore')?.addEventListener('click', loadActivity);
   };
   const loadActivity = async () => {
     const before = actItems.length ? `&before=${encodeURIComponent(actItems[actItems.length - 1].created_at)}` : '';
-    try { const r = await api(`/rooms/${id}/activity?limit=50${before}`); actItems = actItems.concat(r.items); drawActivity(r.items.length === 50); }
+    try { const r = await api(`/rooms/${id}/activity?limit=${ACT_PAGE}${before}`); actItems = actItems.concat(r.items); drawActivity(r.items.length === ACT_PAGE); }
     catch (e) { actBox.innerHTML = `<div class="empty">Couldn't load the history: ${esc(e.message)}</div>`; }
   };
   loadActivity();
