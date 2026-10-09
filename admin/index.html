@@ -1035,7 +1035,7 @@ async function pageServices(root) {
 }
 
 /* ═══════════════ LOGS ═══════════════ */
-const LOG_TABS = [['errors', 'All errors'], ['api', 'API server'], ['face', 'Face worker'], ['video', 'Video worker']];
+const LOG_TABS = [['errors', 'All errors'], ['api', 'API server'], ['face', 'Face worker'], ['video', 'Video worker'], ['nsfw', 'NSFW worker']];
 const clockTime = d => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
 const lvlClass = l => /ERR|CRIT|FATAL/i.test(l || '') ? 'err' : /WARN/i.test(l || '') ? 'warn' : '';
 
@@ -1090,7 +1090,7 @@ async function pageLogs(root, tab, opts = {}) {
   const render = () => {
     const shown = lines.filter(l => (!errorsOnly || lvlClass(l.level)) && (!q || (l.message || '').toLowerCase().includes(q)));
     $('#lcount').textContent = `${fmt(shown.length)} lines`;
-    if (!shown.length) { body.innerHTML = `<div class="empty">${lines.length ? 'No lines match.' : lastErr ? esc(lastErr) : tab === 'errors' ? 'No errors in this window.' : tab === 'video' ? 'No log lines yet. The video worker starts sending logs once the new version is running on the server.' : 'No log lines.'}</div>`; return; }
+    if (!shown.length) { body.innerHTML = `<div class="empty">${lines.length ? 'No lines match.' : lastErr ? esc(lastErr) : tab === 'errors' ? 'No errors in this window.' : tab === 'video' ? 'No log lines yet. The video worker starts sending logs once the new version is running on the server.' : tab === 'nsfw' ? 'No log lines yet. The NSFW worker sends logs as it processes uploads.' : 'No log lines.'}</div>`; return; }
     const old = body.querySelector('.term'), hadOld = !!old;
     const atBottom = old && old.scrollHeight - old.scrollTop - old.clientHeight < 40;
     body.innerHTML = `<div class="term">${shown.map(l => `<div class="ln ${lvlClass(l.level)}"><span class="ts">${esc(clockTime(l.at))}</span>${tab === 'errors' ? `<span class="src">${esc(l.source)}</span>` : ''}<span class="lv">${esc((l.level || '').slice(0, 5))}</span><span class="msg">${esc(l.message)}</span></div>`).join('')}</div>`;
