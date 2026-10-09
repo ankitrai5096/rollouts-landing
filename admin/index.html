@@ -89,13 +89,35 @@ a:hover { text-decoration: underline; }
 .topbar .grow { flex: 1; min-width: 0; }
 .menu-btn { display: none; }
 .content { padding: 24px 28px 60px; max-width: 1280px; }
+/* ── Mobile nav backdrop ── */
+.nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 19; }
+body.nav-open .nav-backdrop { display: block; }
+
 @media (max-width: 860px) {
   .sidebar { transform: translateX(-100%); transition: transform .2s; }
   body.nav-open .sidebar { transform: none; }
   .main { margin-left: 0; }
   .menu-btn { display: inline-flex; }
-  .topbar { padding: 14px 16px; }
-  .content { padding: 16px 16px 60px; }
+  .topbar { padding: 12px 14px; gap: 8px; }
+  .topbar h2 { font-size: 16px; }
+  .content { padding: 14px 14px 60px; }
+  /* Hide text labels on small topbar buttons, keep them tappable */
+  #refreshBtn { font-size: 0; padding: 8px 10px; }
+  #refreshBtn::before { content: '↺'; font-size: 16px; }
+  /* Log tabs: scroll horizontally instead of wrapping */
+  .chips { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .chip { flex-shrink: 0; }
+  /* Terminal: shorten timestamps */
+  .term .ts { display: none; }
+  /* KPIs: 2 per row minimum on very small screens */
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  /* Hero: stack vertically */
+  .hero { flex-direction: column; align-items: flex-start; gap: 10px; }
+  /* Sidebar close button */
+  .sidebar-close { display: flex; }
+}
+@media (min-width: 861px) {
+  .sidebar-close { display: none !important; }
 }
 
 /* cards */
@@ -299,6 +321,7 @@ body.is-prod .sidebar { border-right: 3px solid var(--bad); }
     </nav>
     <div class="side-foot"><div id="health"></div>Signed in as<br><b id="whoami"></b><button id="logoutBtn" type="button">Sign out</button></div>
   </aside>
+  <div class="nav-backdrop" id="navBackdrop"></div>
   <div class="main">
     <div class="prod-bar hidden" id="prodBar">You are looking at PRODUCTION. Deletes, bans and pushes here change real data.</div>
     <header class="topbar">
@@ -1257,6 +1280,9 @@ function applyTheme(dark) {
 $$('[data-theme-toggle]').forEach(b => b.addEventListener('click', () => applyTheme(document.documentElement.dataset.theme !== 'dark')));
 applyTheme(document.documentElement.dataset.theme === 'dark');
 $('#menuBtn').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+$('#navBackdrop').addEventListener('click', () => document.body.classList.remove('nav-open'));
+// Close sidebar when a nav link is tapped on mobile
+$$('#nav a').forEach(a => a.addEventListener('click', () => document.body.classList.remove('nav-open')));
 $('#refreshBtn').addEventListener('click', route);
 window.addEventListener('hashchange', () => { if (TOKEN) route(); });
 
