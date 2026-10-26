@@ -101,23 +101,67 @@ body.nav-open .nav-backdrop { display: block; }
   .topbar { padding: 12px 14px; gap: 8px; }
   .topbar h2 { font-size: 16px; }
   .content { padding: 14px 14px 60px; }
-  /* Hide text labels on small topbar buttons, keep them tappable */
+  /* Topbar: hide env badge (visible in sidebar), make icon-only buttons */
+  #envBadge { display: none; }
+  .topbar [data-theme-toggle] { font-size: 0; padding: 8px 10px; }
+  .topbar [data-theme-toggle]::before { content: '◑'; font-size: 16px; }
   #refreshBtn { font-size: 0; padding: 8px 10px; }
   #refreshBtn::before { content: '↺'; font-size: 16px; }
-  /* Log tabs: scroll horizontally instead of wrapping */
+  /* Log tabs and filter chips: scroll horizontally */
   .chips { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
   .chip { flex-shrink: 0; }
-  /* Terminal: shorten timestamps */
+  /* Terminal: hide timestamps, tighten padding */
   .term .ts { display: none; }
-  /* KPIs: 2 per row minimum on very small screens */
+  .term .ln { padding: 1px 12px; }
+  /* KPIs: 2 per row minimum */
   .kpis { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
-  /* Hero: stack vertically */
+  /* Hero: stack vertically, prevent overflow */
   .hero { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .hero .grow { min-width: 0; }
+  .hero h3 { font-size: 18px; word-break: break-word; }
+  .hero .actions { flex-wrap: wrap; }
+  /* Panels: reduce padding */
+  .panel-head { padding: 12px 14px 0; }
+  .panel-body { padding: 10px 14px 14px; }
+  /* Tables: reduce cell padding so rows fit better */
+  th { padding: 8px 12px; }
+  td { padding: 9px 12px; }
+  .who .n, .who .e { max-width: 160px; }
+  /* Toolbar: full-width search on phones */
+  .toolbar { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+  .toolbar .input { max-width: none; width: 100%; }
+  /* Media grid: smaller tiles on phone */
+  .media-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; padding: 10px 14px 14px; }
+  /* Pager: wrap count and nav buttons */
+  .pager { flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
+  /* Chart: shorter on phones */
+  .chart-wrap svg { height: 200px; }
   /* Sidebar close button */
   .sidebar-close { display: flex; }
+  /* Modal: full-width on phones */
+  .modal { padding: 18px 16px; }
+  /* Facts grid: 2 columns minimum on phones */
+  .facts { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  /* Fact padding */
+  .fact { padding: 10px 14px; }
+  /* Crumbs */
+  .crumbs { font-size: 12px; }
+  /* Service map hint */
+  .svc-map { padding: 8px 14px 14px; }
 }
 @media (min-width: 861px) {
   .sidebar-close { display: none !important; }
+}
+/* Extra-small phones (under 420px) */
+@media (max-width: 420px) {
+  .sidebar { width: min(232px, 85vw); }
+  .kpi .val { font-size: 22px; }
+  .kpi { padding: 10px 12px; }
+  .topbar h2 { font-size: 14px; }
+  .hero h3 { font-size: 16px; }
+  .btn.sm { padding: 5px 8px; font-size: 11px; }
+  .pager .btns { flex-wrap: wrap; gap: 4px; }
+  .actions .btn { font-size: 12px; padding: 6px 10px; }
 }
 
 /* cards */
@@ -163,6 +207,14 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pill.amber { background: var(--amber-bg); color: var(--amber); }
 .pill.blue { background: var(--blue-bg); color: var(--blue); }
 .pill.violet { background: var(--violet-bg); color: var(--violet); }
+.olead { display: flex; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border-soft); }
+.olead .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.olead .n { font-weight: 600; }
+.olead .muted { font-size: 12.5px; }
+.orank { color: var(--sub); font-size: 11.5px; font-weight: 700; margin-right: 8px; font-variant-numeric: tabular-nums; }
+.owhy { font-style: italic; }
+.oact { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) { .olead { flex-direction: column; align-items: stretch; } .oact { justify-content: flex-start; } }
 .empty, .state { padding: 34px 18px; text-align: center; color: var(--sub); }
 .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--border-soft); font-size: 12.5px; color: var(--sub); flex-wrap: wrap; }
 .pager .btns { display: flex; gap: 6px; }
@@ -305,15 +357,21 @@ body.is-prod .sidebar { border-right: 3px solid var(--bad); }
 
 <div id="app">
   <aside class="sidebar">
-    <div class="brand"><div class="brand-mark">R</div><span class="brand-name">Rollout</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div class="brand"><div class="brand-mark">R</div><span class="brand-name">Rollout</span></div>
+      <button class="btn sidebar-close" id="closeSidebarBtn" type="button" style="padding:6px 10px;font-size:13px">✕</button>
+    </div>
     <div class="side-tag">Super admin</div>
     <div class="env-switch chips" id="envSwitch"></div>
     <nav class="nav" id="nav">
       <a href="#/overview" data-sec="overview">Overview</a>
       <a href="#/users" data-sec="users">Users</a>
       <a href="#/rooms" data-sec="rooms">Rooms</a>
+      <a href="#/planned" data-sec="planned">Planned events</a>
       <a href="#/revenue" data-sec="revenue">Revenue</a>
       <a href="#/push" data-sec="push">Push notifications</a>
+      <a href="#/outreach" data-sec="outreach">Outreach</a>
+      <a href="#/blog" data-sec="blog">Blog</a>
       <div class="sep"></div>
       <a href="#/services" data-sec="services">Services</a>
       <a href="#/logs" data-sec="logs">Logs</a>
@@ -454,7 +512,7 @@ function pager(data, onPage) {
     <button class="btn sm" data-p="${data.page + 1}" ${data.page >= pages ? 'disabled' : ''} type="button">Next</button></div></div>`;
 }
 function debounce(fn, ms = 300) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
-const state = { users: { page: 1, q: '', banned: false }, rooms: { page: 1, q: '', tier: '' }, rev: { env: 'live', status: 'all', page: 1, date: '' } };
+const state = { users: { page: 1, q: '', banned: false }, rooms: { page: 1, q: '', tier: '' }, planned: { page: 1, q: '', status: '' }, rev: { env: 'live', status: 'all', page: 1, date: '' } };
 
 /* ═══════════════ OVERVIEW ═══════════════ */
 async function pageOverview(root) {
@@ -463,9 +521,10 @@ async function pageOverview(root) {
   root.innerHTML = `<div class="stack">
     <div><div class="section-label">All time</div><div class="kpis">
       ${kpi('Users', fmt(t.users))}${kpi('Photos', fmt(t.photos))}${kpi('Videos', fmt(t.videos))}
-      ${kpi('Events', fmt(t.events))}${kpi('Paid events', fmt(t.paid_events), 'On Large or Extra Large')}</div></div>
+      ${kpi('Events', fmt(t.events))}${kpi('Paid events', fmt(t.paid_events), 'On Large or Extra Large')}
+      ${kpi('<a href="#/planned">Planned events</a>', fmt(t.planned), t.planned === undefined ? '' : `${fmt(t.planned_upcoming)} upcoming · ${fmt(t.planned_became)} became events`)}</div></div>
     <div><div class="section-label">Today (India time)</div><div class="kpis">
-      ${kpi('New users', fmt(td.users))}${kpi('New events', fmt(td.events))}${kpi('Payments', fmt(td.payments), 'Paid events and upgrades')}${kpi('Photos & videos added', fmt(td.photos))}</div></div>
+      ${kpi('New users', fmt(td.users))}${kpi('New events', fmt(td.events))}${kpi('Payments', fmt(td.payments), 'Paid events and upgrades')}${kpi('Photos & videos added', fmt(td.photos))}${kpi('Planned today', fmt(td.planned), '"Happening later" reminders set')}</div></div>
     <section class="card"><div class="panel-head"><div><div class="panel-title">Last 30 days</div><div class="panel-sub">New users, new events and payments per day</div></div>
       <div class="chips" id="chartView"><button class="chip on" data-v="chart" type="button">Chart</button><button class="chip" data-v="table" type="button">Table</button></div></div>
       <div class="panel-body" style="padding-bottom:6px"><div class="legend">
@@ -563,13 +622,19 @@ async function pageUser(root, id) {
       <div class="facts"><div class="fact"><div class="k">User id</div><div class="v mono">${esc(u.id)}</div></div>
       <div class="fact"><div class="k">Events</div><div class="v">${fmt(d.rooms.length)}</div></div>
       <div class="fact"><div class="k">Organiser of</div><div class="v">${fmt(d.rooms.filter(r => r.is_creator).length)}</div></div>
-      <div class="fact"><div class="k">Payments</div><div class="v">${fmt(d.payments.length)} · ${inr(d.payments.filter(p => p.status !== 'refunded').reduce((a, p) => a + p.amount_inr, 0))}</div></div></div></section>
+      <div class="fact"><div class="k">Payments</div><div class="v">${fmt(d.payments.length)} · ${inr(d.payments.filter(p => p.status !== 'refunded').reduce((a, p) => a + p.amount_inr, 0))}</div></div>
+      <div class="fact"><div class="k">Planned events</div><div class="v">${fmt((d.planned || []).length)}</div></div></div></section>
     <section class="card"><div class="panel-head"><div><div class="panel-title">Events</div><div class="panel-sub">Every room they are in. Open one to manage it.</div></div></div>
       <div class="panel-body" style="padding:8px 0 0">${d.rooms.length ? `<div class="table-wrap"><table><thead><tr><th>Event</th><th>Role</th><th>Tier</th><th class="num">Photos</th><th>Joined</th></tr></thead><tbody>
       ${d.rooms.map(r => `<tr class="click" data-id="${r.id}"><td><div class="who"><div class="emoji">${icon(r.emoji, r.name)}</div><div class="t"><div class="n">${esc(r.name)}</div></div></div></td>
         <td>${r.is_creator ? '<span class="pill violet">Organiser</span>' : 'Guest'} ${r.banned ? '<span class="pill red">Blocked</span>' : ''}</td>
         <td>${tierPill(r.event_type)} ${r.status === 'awaiting_payment' ? '<span class="pill amber">Awaiting payment</span>' : ''}</td><td class="num">${fmt(r.photo_count)}</td><td>${fmtDate(r.joined_at)}</td></tr>`).join('')}
       </tbody></table></div>` : '<div class="empty">Not in any event.</div>'}</div></section>
+    ${(d.planned || []).length ? `<section class="card"><div class="panel-head"><div><div class="panel-title">Planned events</div><div class="panel-sub">Events they said are coming up later, and their reminders. Manage them in <a href="#/planned">Planned events</a>.</div></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Event</th><th>Date</th><th>Status</th><th>Planned on</th></tr></thead><tbody>
+      ${d.planned.map(r => `<tr><td><div class="who"><div class="emoji">${icon(r.icon, r.name || '?')}</div><div class="t"><div class="n">${esc(r.name || 'No name')}</div>${r.room_id ? `<div class="e"><a href="#/rooms/${r.room_id}">${esc(r.room_name || 'Open event')}</a></div>` : ''}</div></div></td>
+        <td>${fmtDay(r.remind_on)}</td><td>${plannedPill(r.status)}</td><td>${fmtDate(r.created_at)}</td></tr>`).join('')}
+      </tbody></table></div></section>` : ''}
     ${d.payments.length ? `<section class="card"><div class="panel-head"><div class="panel-title">Payments</div></div><div class="panel-body" style="padding:8px 0 0">${paymentsTable(d.payments.map(p => ({ ...p, user: null })), { hideUser: true })}</div></section>` : ''}
   </div>`;
   $$('tr.click[data-id]', root).forEach(tr => tr.addEventListener('click', () => location.hash = '#/rooms/' + tr.dataset.id));
@@ -645,6 +710,7 @@ async function pageRoom(root, id) {
         <div class="fact"><div class="k">Adding photos</div><div class="v">${r.upload_mode === 'organisers' ? 'Only organisers' : 'Everyone'}</div></div>
         <div class="fact"><div class="k">Members see</div><div class="v">${r.view_mode === 'own' ? 'Only their own photos' : 'All photos'}</div></div>
         <div class="fact"><div class="k">Room id</div><div class="v mono">${esc(r.id)}</div></div>
+        ${d.planned_from ? `<div class="fact"><div class="k">Planned</div><div class="v">For ${fmtDay(d.planned_from.remind_on)}<div class="muted" style="font-weight:400;font-size:12px">${d.planned_from.sent_at ? 'Created after the reminder' : 'Created before the reminder went out'} · planned ${fmtDate(d.planned_from.created_at)}</div></div></div>` : ''}
       </div></section>
     <section class="card"><div class="panel-head"><div><div class="panel-title">Tier</div><div class="panel-sub">Moves the event without a payment. Everyone in it gets a notification.${r.pending_upgrade_to ? ' The organiser’s pending upgrade is cancelled.' : ''}</div></div></div>
       <div class="panel-body"><div class="tier-row"><div class="seg" id="tierSeg">${[['normal', 'Free'], ['large', 'Large'], ['extra_large', 'Extra Large']].map(([v, l]) =>
@@ -1058,7 +1124,7 @@ async function pageServices(root) {
 }
 
 /* ═══════════════ LOGS ═══════════════ */
-const LOG_TABS = [['errors', 'All errors'], ['api', 'API server'], ['face', 'Face worker'], ['video', 'Video worker'], ['nsfw', 'NSFW worker']];
+const LOG_TABS = [['api', 'API server'], ['face', 'Face worker'], ['video', 'Video worker'], ['nsfw', 'NSFW worker']];
 const clockTime = d => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '';
 const lvlClass = l => /ERR|CRIT|FATAL/i.test(l || '') ? 'err' : /WARN/i.test(l || '') ? 'warn' : '';
 
@@ -1099,13 +1165,12 @@ function livePoll(fn, { every, keep, alive, onStatus }) {
 // opts.title: show it instead of the tab links (used inside the Services page); opts.register: where the
 // refresh timers go, so that page can stop them when another part is picked.
 async function pageLogs(root, tab, opts = {}) {
-  tab = LOG_TABS.some(t => t[0] === tab) ? tab : 'errors';
+  tab = LOG_TABS.some(t => t[0] === tab) ? tab : 'face';
   const keep = opts.register || (id => timers.push(id));
-  let q = '', errorsOnly = false, hours = 24, lines = [], lastErr = '';
+  let q = '', errorsOnly = false, lines = [], lastErr = '';
   root.innerHTML = `<section class="card"><div class="toolbar">${opts.title ? `<div class="panel-title" style="margin-right:6px">${esc(opts.title)}</div>` : `<div class="chips">${LOG_TABS.map(([v, l]) => `<a class="chip ${v === tab ? 'on' : ''}" href="#/logs/${v}" style="text-decoration:none">${l}</a>`).join('')}</div>`}
       <input class="input" id="lq" placeholder="Filter lines">
-      ${tab === 'errors' ? `<select class="input" id="lh" style="width:auto">${[[1, 'Last hour'], [24, 'Last 24 hours'], [72, 'Last 3 days'], [168, 'Last 7 days']].map(([v, l]) => `<option value="${v}" ${v === 24 ? 'selected' : ''}>${l}</option>`).join('')}</select>`
-        : '<button class="chip" id="lerr" type="button">Errors & warnings only</button>'}
+      <button class="chip" id="lerr" type="button">Errors & warnings only</button>
       <span class="muted" id="lcount" style="font-size:12.5px"></span></div>
     <div class="live idle" id="lstat">Connecting…</div>
     <div id="lbody"><div class="state">Loading…</div></div></section>`;
@@ -1113,11 +1178,11 @@ async function pageLogs(root, tab, opts = {}) {
   const render = () => {
     const shown = lines.filter(l => (!errorsOnly || lvlClass(l.level)) && (!q || (l.message || '').toLowerCase().includes(q)));
     $('#lcount').textContent = `${fmt(shown.length)} lines`;
-    if (!shown.length) { body.innerHTML = `<div class="empty">${lines.length ? 'No lines match.' : lastErr ? esc(lastErr) : tab === 'errors' ? 'No errors in this window.' : tab === 'video' ? 'No log lines yet. The video worker starts sending logs once the new version is running on the server.' : tab === 'nsfw' ? 'No log lines yet. The NSFW worker sends logs as it processes uploads.' : 'No log lines.'}</div>`; return; }
+    if (!shown.length) { body.innerHTML = `<div class="empty">${lines.length ? 'No lines match.' : lastErr ? esc(lastErr) : tab === 'video' ? 'No log lines yet. The video worker starts sending logs once the new version is running on the server.' : tab === 'nsfw' ? 'No log lines yet. The NSFW worker sends logs as it processes uploads.' : 'No log lines.'}</div>`; return; }
     const old = body.querySelector('.term'), hadOld = !!old;
     const atBottom = old && old.scrollHeight - old.scrollTop - old.clientHeight < 40;
-    body.innerHTML = `<div class="term">${shown.map(l => `<div class="ln ${lvlClass(l.level)}"><span class="ts">${esc(clockTime(l.at))}</span>${tab === 'errors' ? `<span class="src">${esc(l.source)}</span>` : ''}<span class="lv">${esc((l.level || '').slice(0, 5))}</span><span class="msg">${esc(l.message)}</span></div>`).join('')}</div>`;
-    const t = body.querySelector('.term'); if (tab !== 'errors' && (atBottom || !hadOld)) t.scrollTop = t.scrollHeight;
+    body.innerHTML = `<div class="term">${shown.map(l => `<div class="ln ${lvlClass(l.level)}"><span class="ts">${esc(clockTime(l.at))}</span><span class="lv">${esc((l.level || '').slice(0, 5))}</span><span class="msg">${esc(l.message)}</span></div>`).join('')}</div>`;
+    const t = body.querySelector('.term'); if (atBottom || !hadOld) t.scrollTop = t.scrollHeight;
   };
   $('#lq').addEventListener('input', debounce(e => { q = e.target.value.toLowerCase(); render(); }, 150));
   $('#lerr')?.addEventListener('click', e => { errorsOnly = !errorsOnly; e.target.classList.toggle('on', errorsOnly); render(); });
@@ -1127,11 +1192,7 @@ async function pageLogs(root, tab, opts = {}) {
     onStatus: (state, text) => { const el = root.querySelector('#lstat'); if (el) { el.className = 'live ' + state; el.textContent = text; } },
   });
   // Each loader throws when it cannot get lines, so the status line goes red and the lines already shown stay.
-  if (tab === 'errors') {
-    const p = poll(async () => { const d = await api(`/dashboard/ops/errors/recent?hours=${hours}`); lines = d.items; lastErr = ''; render(); }, 15000);
-    $('#lh').addEventListener('change', e => { hours = Number(e.target.value); p.now(); });
-    await p.now();
-  } else if (tab === 'api') {
+  if (tab === 'api') {
     // Railway's log feed, read fresh on each refresh: a snapshot of the latest lines, not a stream.
     await poll(async () => {
       let d;
@@ -1199,13 +1260,471 @@ async function pageApp(root) {
   });
 }
 
+/* ═══════════════ PLANNED EVENTS ("Happening later" reminders) ═══════════════ */
+const PLANNED_STATUS = {
+  upcoming: ['Upcoming', ''], sent: ['Reminder sent', 'amber'], created: ['Became an event', 'green'],
+  cancelled: ['Cancelled', 'red'], no_push: ['No push (notifications off)', 'red'],
+};
+const plannedPill = s => { const [l, c] = PLANNED_STATUS[s] || [s, '']; return `<span class="pill ${c}">${esc(l)}</span>`; };
+const fmtDay = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+
+/* A small dialog with fields; resolves to { field: value } or null. */
+function formDialog({ title, body = '', fields, confirm = 'Save' }) {
+  return new Promise(resolve => {
+    const o = document.createElement('div'); o.className = 'overlay';
+    o.innerHTML = `<div class="modal" role="dialog" aria-modal="true"><h4>${esc(title)}</h4>${body ? `<p>${body}</p>` : ''}
+      ${fields.map(f => `<div class="field"><label>${esc(f.label)}</label>${f.type === 'textarea'
+        ? `<textarea class="input" data-k="${f.key}" rows="3" maxlength="${f.max || 240}">${esc(f.value || '')}</textarea>`
+        : `<input class="input" data-k="${f.key}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.max ? `maxlength="${f.max}"` : ''} ${f.min ? `min="${f.min}"` : ''}>`}</div>`).join('')}
+      <div class="row"><button class="btn" data-a="no" type="button">Cancel</button><button class="btn primary" data-a="yes" type="button">${esc(confirm)}</button></div></div>`;
+    document.body.appendChild(o);
+    const done = v => { o.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') done(null); };
+    document.addEventListener('keydown', onKey);
+    o.addEventListener('click', e => {
+      if (e.target === o || e.target.dataset.a === 'no') done(null);
+      if (e.target.dataset.a === 'yes') done(Object.fromEntries($$('[data-k]', o).map(el => [el.dataset.k, el.value])));
+    });
+    $('[data-k]', o)?.focus();
+  });
+}
+
+async function pagePlanned(root) {
+  const st = state.planned;
+  const chips = [['', 'All'], ['upcoming', 'Upcoming'], ['sent', 'Reminder sent'], ['created', 'Became an event'], ['no_push', 'No push'], ['cancelled', 'Cancelled']];
+  root.innerHTML = `<div class="stack"><div class="kpis" id="pkpis"></div>
+    <section class="card"><div class="toolbar"><input class="input" id="q" placeholder="Search event name, organiser name or email" value="${esc(st.q)}">
+    <div class="chips" id="pst">${chips.map(([v, l]) => `<button class="chip ${st.status === v ? 'on' : ''}" data-v="${v}" type="button">${l}</button>`).join('')}</div><span class="muted" id="cnt"></span></div>
+    <div id="list"><div class="state">Loading…</div></div></section></div>`;
+  let items = [];
+  const load = async () => {
+    const d = await api(`/planned?page=${st.page}&q=${encodeURIComponent(st.q)}&status=${st.status}`);
+    items = d.items;
+    const m = d.summary, made = m.created, base = m.created + m.sent + m.no_push;
+    $('#pkpis').innerHTML = kpi('Planned events', fmt(m.all)) + kpi('Upcoming', fmt(m.upcoming))
+      + kpi('Became an event', fmt(made), base ? `${Math.round(made * 100 / base)}% of reminders sent or used` : '')
+      + kpi('Could not reach', fmt(m.no_push), 'Notifications off on their phone');
+    $('#cnt').textContent = `${fmt(d.total)} · soonest first`;
+    $('#list').innerHTML = d.items.length ? `<div class="table-wrap"><table><thead><tr><th>Event</th><th>Organiser</th><th>Date</th><th>Status</th><th>Planned on</th><th></th></tr></thead><tbody>
+      ${d.items.map((r, i) => `<tr><td><div class="who"><div class="emoji">${icon(r.icon, r.name || '?')}</div><div class="t"><div class="n">${esc(r.name || 'No name')}</div>${r.room_id ? `<div class="e"><a href="#/rooms/${r.room_id}">${esc(r.room_name || 'Open event')}</a></div>` : ''}</div></div></td>
+        <td><div class="who"><div class="t"><div class="n"><a href="#/users/${r.organiser.id}">${esc(r.organiser.name || 'User')}</a></div><div class="e">${esc(r.organiser.email || '')}${r.organiser.has_push ? '' : ' · notifications off'}</div></div></div></td>
+        <td>${fmtDay(r.remind_on)}</td><td>${plannedPill(r.status)}${r.sent_at ? `<div class="muted" style="font-size:11.5px;margin-top:3px">sent ${fmtDT(r.sent_at)}</div>` : ''}</td><td>${fmtDate(r.created_at)}</td>
+        <td><div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:nowrap">
+          ${r.status !== 'created' ? `<button class="btn sm" data-act="edit" data-i="${i}" type="button">Edit</button>` : ''}
+          ${r.status !== 'created' && r.organiser.has_push ? `<button class="btn sm" data-act="send" data-i="${i}" type="button">Send now</button>` : ''}
+          ${r.status === 'upcoming' ? `<button class="btn sm danger" data-act="cancel" data-i="${i}" type="button">Cancel</button>` : ''}
+          ${r.status === 'cancelled' ? `<button class="btn sm" data-act="restore" data-i="${i}" type="button">Restore</button>` : ''}
+        </div></td></tr>`).join('')}
+      </tbody></table></div>${pager(d, p => { st.page = p; load(); })}` : '<div class="empty">No planned events match.</div>';
+  };
+  $('#q').addEventListener('input', debounce(e => { st.q = e.target.value; st.page = 1; load(); }));
+  $('#pst').addEventListener('click', e => { if (e.target.dataset.v === undefined) return; st.status = e.target.dataset.v; st.page = 1;
+    $$('#pst .chip').forEach(c => c.classList.toggle('on', c === e.target)); load(); });
+  listen(root, 'click', async e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const r = items[Number(b.dataset.i)]; if (!r) return;
+    try {
+      if (b.dataset.act === 'edit') {
+        const v = await formDialog({ title: 'Edit planned event', confirm: 'Save',
+          body: 'A new date re-arms the reminder: it goes out at 9 am IST on that day, even if it was already sent or cancelled.',
+          fields: [{ key: 'name', label: 'Event name', value: r.name || '', max: 30 },
+                   { key: 'remind_on', label: 'Date', type: 'date', value: r.remind_on, min: new Date().toISOString().slice(0, 10) }] });
+        if (!v) return;
+        const body = {};
+        if (v.name !== (r.name || '')) body.name = v.name;
+        if (v.remind_on && v.remind_on !== r.remind_on) body.remind_on = v.remind_on;
+        if (!Object.keys(body).length) return;
+        await api(`/planned/${r.id}`, { method: 'PATCH', body: JSON.stringify(body) }); toast('Saved.'); load();
+      } else if (b.dataset.act === 'send') {
+        const v = await formDialog({ title: `Send to ${r.organiser.name || 'this person'} now`, confirm: 'Send push',
+          body: 'Tapping it opens the create screen with the event filled in. Leave as is to send the usual reminder.',
+          fields: [{ key: 'title', label: 'Title', value: `${r.name || 'Your event'} is today 🎉`, max: 65 },
+                   { key: 'body', label: 'Message', type: 'textarea', value: 'Tap to create your Rollout event and collect everyone’s photos in one place.', max: 240 }] });
+        if (!v) return;
+        toast('Sending…');
+        const res = await api(`/planned/${r.id}/send`, { method: 'POST', body: JSON.stringify(v) });
+        toast(res.delivered ? 'Delivered to their phone.' : res.accepted ? 'Sent. Delivery not confirmed yet.' : 'Could not send it.', !res.accepted);
+        load();
+      } else if (b.dataset.act === 'cancel') {
+        if (!await confirmDialog({ title: 'Cancel this reminder?', confirm: 'Cancel reminder', danger: true,
+          body: `<b>${esc(r.organiser.name || 'They')}</b> won't get the reminder for <b>${esc(r.name || 'their event')}</b>. You can restore it later.` })) return;
+        await api(`/planned/${r.id}/cancel`, { method: 'POST' }); toast('Cancelled.'); load();
+      } else if (b.dataset.act === 'restore') {
+        await api(`/planned/${r.id}/restore`, { method: 'POST' }); toast('Restored.'); load();
+      }
+    } catch (err) { toast(err.message, true); }
+  });
+  await load();
+}
+
+/* ═══════════════ OUTREACH (daily WhatsApp leads, kept as CSV files in R2) ═══════════════ */
+const OUTREACH_DAILY = 30;
+const OUTREACH_TAG = { 'Warm': 'red', 'College organiser': 'violet', 'Wedding / event': 'green', 'Other shoots': 'amber', 'Unclear': '', 'Not a fit': '' };
+const OUTREACH_STORES = '\n\nAndroid: https://play.google.com/store/apps/details?id=com.rollout.app'
+  + '\niPhone: https://apps.apple.com/us/app/rollout-collect-find-photos/id6781299340'
+  + '\nMore: rollouts.in/?utm_source=whatsapp';
+
+// The first message for a lead, written from its own details. A lead with its own message (warm
+// leads, referrals) uses that instead.
+function outreachMessage(l) {
+  if (l.message) return l.message + OUTREACH_STORES;
+  const clean = s => String(s || '').replace(/\s*\([^)]*\)/g, '').trim();
+  const role = (String(l.what || '').match(/\(([^)]*)\)/) || [])[1] || '';
+  const how = "Everyone scans one QR, every photo from every phone lands in one shared album, and each person finds the photos they're in with a selfie.";
+  if (l.type === 'College organiser') {
+    const first = clean(l.name).split(' ')[0];
+    const event = clean(l.what);
+    // "the next Riwaayat", not "the next Riwaayat 6.0" or "the next Manfest 2025".
+    const fest = event.replace(/\s+((19|20)\d{2}|\d+(\.\d+)?)$/, '');
+    const past = /^\d{4}$/.test(l.year) && +l.year < new Date().getFullYear() - 1;
+    const roleBit = role && !/team|competitions|fest/i.test(role) ? ` as ${role.replace(/^LU\s+/, '')}` : '';
+    return `Hi ${first}, I'm Ankit. I saw ${past ? 'you were part of' : 'your work on'} ${event}${roleBit} at ${l.where}. `
+      + `I built Rollout, a free app for fest photos. ${how} `
+      + `Would you like to try it at the next ${fest} or your next college event? I can set the whole thing up for you.` + OUTREACH_STORES;
+  }
+  const biz = clean(l.name);
+  const parts = String(l.what || '').split(';').map(s => s.trim()).filter(s => s && !/^photography services?$/i.test(s));
+  const svc = (parts.length ? parts : [l.what]).slice(0, 2).map(s => String(s).toLowerCase()).join(' and ');
+  const w = clean(l.where);
+  const area = /lucknow/i.test(w) || !w ? (w || 'Lucknow') : w;
+  if (l.type === 'Wedding / event') {
+    return `Hi ${biz} team, I'm Ankit. I saw you do ${svc} in ${area}. `
+      + `I built Rollout, a shared photo album for weddings and events. ${how} Your photos can go in the same album, so every guest sees your work. `
+      + `Could I set up a free album for your next wedding or event so you can see how guests use it?` + OUTREACH_STORES;
+  }
+  if (l.type === 'Other shoots') {
+    return `Hi ${biz} team, I'm Ankit. I saw you do ${svc} in ${area}. `
+      + `I built Rollout, a shared photo album for events. ${how} `
+      + `If you also cover events or parties, I'd be happy to set up a free album for your next one.` + OUTREACH_STORES;
+  }
+  return `Hi ${biz} team, I'm Ankit. I built Rollout, a free shared photo album for events. ${how} `
+    + `If you work with events or know someone who does, I'd love to set up a free album for them.` + OUTREACH_STORES;
+}
+
+async function pageOutreach(root) {
+  let d = null, extra = 0, type = '', q = '';
+  root.innerHTML = `<div class="stack"><div class="kpis" id="okpis"></div>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Today's leads</div>
+      <div class="panel-sub">Best first. Tap WhatsApp to open the chat with the message typed; the lead then leaves this list. Leftovers roll into tomorrow.</div></div></div>
+      <div class="toolbar"><input class="input" id="oq" placeholder="Search name, number, event, area"><div class="chips" id="otype"></div></div>
+      <div id="olist"><div class="state">Loading…</div></div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Add leads</div>
+      <div class="panel-sub">Upload a CSV with a phone column (number, phone, mobile or whatsapp). Optional: name, event name, location, type, year, source, message.
+      Numbers already in the list or already messaged are skipped.</div></div></div>
+      <div class="panel-body"><div class="field"><label>CSV file</label><input class="input" id="ofile" type="file" accept=".csv,text/csv"></div>
+      <div class="field"><label>Numbers you've already messaged (optional, one per line)</label><textarea class="input" id="osent" rows="2" placeholder="+91 98765 43210"></textarea></div>
+      <button class="btn primary" id="oupload" type="button">Add leads</button> <span class="muted" id="oupres"></span></div></section>
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Recently messaged</div>
+      <div class="panel-sub">Tapped by mistake? Put it back with Undo.</div></div></div><div id="orecent"></div></section></div>`;
+
+  const left = () => Math.max(OUTREACH_DAILY - (d ? d.sent_today : 0), 0);
+  const draw = () => {
+    const leads = d.leads;
+    $('#okpis').innerHTML = kpi('Sent today', `${fmt(d.sent_today)} / ${OUTREACH_DAILY}`, left() ? `${left()} to go` : 'Done for today 🎉')
+      + kpi('Left to message', fmt(leads.length)) + kpi('Warm leads', fmt(leads.filter(l => l.type === 'Warm').length), 'They asked, or were referred')
+      + kpi('Messaged in total', fmt(d.sent_total));
+    const types = ['', ...Object.keys(OUTREACH_TAG).filter(t => leads.some(l => l.type === t))];
+    $('#otype').innerHTML = types.map(t => `<button class="chip ${t === type ? 'on' : ''}" data-v="${esc(t)}" type="button">${esc(t || 'All')}${t ? ` · ${leads.filter(l => l.type === t).length}` : ''}</button>`).join('');
+    const ql = q.toLowerCase();
+    const match = leads.filter(l => (!type || l.type === type) && (!ql || [l.name, l.number, l.what, l.where].join(' ').toLowerCase().includes(ql)));
+    const filtering = type || ql;
+    const n = filtering ? 50 + extra : left() + extra;
+    const shown = match.slice(0, n);
+    $('#olist').innerHTML = (shown.length ? shown.map(l => {
+      const rank = leads.indexOf(l) + 1;
+      return `<div class="olead"><div class="grow">
+        <div class="n"><span class="orank">#${rank}</span>${esc(l.name)} <span class="pill ${OUTREACH_TAG[l.type] || ''}">${esc(l.type)}</span></div>
+        <div class="muted">${esc(l.what)}</div>
+        <div class="muted mono">${esc(l.number)}${l.where ? ` · ${esc(l.where)}` : ''}${l.year ? ` · ${esc(l.year)}` : ''}</div>
+        ${l.why ? `<div class="muted owhy">Why: ${esc(l.why)}</div>` : ''}</div>
+        <div class="row oact">
+          <a class="btn sm primary" data-wa="${esc(l.number)}" href="https://wa.me/${l.number.replace(/\D/g, '')}?text=${encodeURIComponent(outreachMessage(l))}" target="_blank" rel="noopener">WhatsApp</a>
+          ${l.source ? `<a class="btn sm" href="${esc(l.source)}" target="_blank" rel="noopener">Source</a>` : ''}
+          <button class="btn sm" data-done="${esc(l.number)}" type="button" title="Remove without opening WhatsApp">Remove</button>
+        </div></div>`;
+    }).join('') : `<div class="empty">${filtering ? 'No leads match.' : leads.length ? 'Done for today 🎉 Show more to keep going.' : 'No leads yet. Add a CSV below.'}</div>`)
+      + (match.length > shown.length ? `<div class="panel-body"><button class="btn" id="omore" type="button">Show ${Math.min(30, match.length - shown.length)} more</button></div>` : '');
+    $('#orecent').innerHTML = d.recent_sent.length ? d.recent_sent.map(s => `<div class="olead"><div class="grow"><div class="n">${esc(s.name)}</div>
+      <div class="muted mono">${esc(s.number)} · ${fmtDT(s.sent_at)}</div></div>
+      <div class="row oact"><button class="btn sm" data-undo="${esc(s.number)}" type="button">Undo</button></div></div>`).join('')
+      : '<div class="empty">Nobody messaged yet.</div>';
+  };
+  const load = async () => { d = await api('/outreach'); draw(); };
+
+  const markSent = async number => {
+    const l = d.leads.find(x => x.number === number); if (!l) return;
+    d.leads = d.leads.filter(x => x !== l);
+    d.recent_sent.unshift({ ...l, sent_at: new Date().toISOString() });
+    d.sent_today++; d.sent_total++;
+    draw();
+    try { await api('/outreach/sent', { method: 'POST', body: JSON.stringify({ number }) }); }
+    catch (e) { toast(`Couldn't save that ${l.name} was messaged: ${e.message}`, true); load(); }
+  };
+
+  $('#oq').addEventListener('input', debounce(e => { q = e.target.value.trim(); extra = 0; draw(); }));
+  listen(root, 'click', async e => {
+    const wa = e.target.closest('a[data-wa]');
+    if (wa) { setTimeout(() => markSent(wa.dataset.wa), 300); return; }
+    const chip = e.target.closest('#otype .chip');
+    if (chip) { type = chip.dataset.v; extra = 0; draw(); return; }
+    if (e.target.id === 'omore') { extra += 30; draw(); return; }
+    const done = e.target.closest('button[data-done]');
+    if (done) { markSent(done.dataset.done); return; }
+    const undo = e.target.closest('button[data-undo]');
+    if (undo) {
+      try { await api('/outreach/unsent', { method: 'POST', body: JSON.stringify({ number: undo.dataset.undo }) }); toast('Put back in the list.'); load(); }
+      catch (err) { toast(err.message, true); }
+      return;
+    }
+    if (e.target.id === 'oupload') {
+      const f = $('#ofile').files[0];
+      const already = $('#osent').value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+      if (!f && !already.length) { toast('Pick a CSV file first.', true); return; }
+      e.target.disabled = true; $('#oupres').textContent = 'Uploading…';
+      try {
+        const text = f ? await f.text() : 'number\n';
+        const r = await api('/outreach/upload', { method: 'POST', body: JSON.stringify({ csv: text, already_sent: already }) });
+        const bits = [`${fmt(r.added)} added`];
+        if (r.duplicates) bits.push(`${fmt(r.duplicates)} already in the list`);
+        if (r.already_sent) bits.push(`${fmt(r.already_sent)} already messaged`);
+        if (r.invalid) bits.push(`${fmt(r.invalid)} without a usable number`);
+        if (r.marked_sent) bits.push(`${fmt(r.marked_sent)} marked as messaged`);
+        $('#oupres').textContent = bits.join(' · ');
+        $('#ofile').value = ''; $('#osent').value = '';
+        extra = 0; await load();
+      } catch (err) { $('#oupres').textContent = ''; toast(err.message, true); }
+      finally { e.target.disabled = false; }
+    }
+  });
+  await load();
+}
+
+/* ── Blog: posts for rollouts.in/blogs ── */
+const BLOG_SITE = 'https://rollouts.in/blogs/';
+const blogPill = p => p.status === 'published' ? '<span class="pill green">Published</span>' : '<span class="pill amber">Draft</span>';
+const fileToDataUrl = f => new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = bad; r.readAsDataURL(f); });
+async function blogUpload(file) {
+  if (file.size > 10e6) throw new Error('Images can be up to 10 MB');
+  return (await api('/blog/images', { method: 'POST', body: JSON.stringify({ data: await fileToDataUrl(file) }) })).url;
+}
+
+// "Write with AI": the admin copies this prompt into a Claude chat, then pastes the answer back.
+// The answer comes in labelled parts (TITLE:, SUMMARY:, ...) that blogFromAI() reads.
+function blogPrompt(topic) {
+  return `Write a blog post for rollouts.in/blogs, the blog of Rollout, an Indian app for collecting event photos.
+
+Topic: ${topic || '(pick a timely topic: an upcoming Indian festival, the wedding season, trips, college fests or parties, and how people collect and share the photos)'}
+
+Search the web first for what is current and true, and use real, checkable facts.
+
+About Rollout (only claim what is here):
+- Free app on Android and iPhone.
+- The organiser creates an event and shares one QR code or link. Guests scan it, install the app and join.
+- Every photo from every guest's phone lands in one shared album, live, in full quality (no WhatsApp compression).
+- Face search: each person takes a selfie and sees just the photos they're in.
+- Organisers can also upload from a computer, including photographer photos.
+- Free events last 30 days. Bigger paid events exist; don't quote prices.
+
+How to write it:
+- Answer the reader's question directly in the first two sentences, the way someone would ask ChatGPT or Google.
+- Practical and specific to India: names of occasions, real situations, what people can actually do.
+- Fair to other options (Google Photos shared albums, WhatsApp, Drive). Mention Rollout where it truly helps, not in every paragraph.
+- 900 to 1300 words, about 5 minutes to read. Write it like a normal blog: plain paragraphs of 3 to 5 sentences, in plain English.
+- You may use 3 to 5 short ## subheadings. Nothing else: no tables, no bullet or numbered lists, no quotes, no bold, no FAQ section, no HTML, no images, no em dashes.
+
+Reply with exactly this format and nothing else:
+
+TITLE: <under 70 characters, how a person would search it>
+SUMMARY:
+- <3 or 4 short points, one per line, that answer the question; each under 120 characters>
+TAGS: <3 to 5 tags, comma separated>
+SOURCES:
+- <page title> | <https://url you actually used>
+BODY:
+<the post: paragraphs and a few ## subheadings, starting with the first paragraph, not the title>`;
+}
+function blogFromAI(text) {
+  // Claude may add a line before it, wrap it in a code block, or bold the labels.
+  const t = text.replace(/^\s*```[a-z]*\s*$/gim, '').replace(/^\s*\*\*(TITLE|SUMMARY|TAGS|SOURCES|BODY):?\*\*:?/gim, '$1:');
+  const m = t.match(/^\s*TITLE:\s*([\s\S]*?)\n\s*SUMMARY:\s*([\s\S]*?)\n\s*TAGS:\s*([\s\S]*?)\n\s*SOURCES:\s*([\s\S]*?)\n\s*BODY:[ \t]*\n?([\s\S]*)$/im);
+  if (!m) return null;
+  const sources = m[4].split('\n').map(l => l.replace(/^\s*[-*\d.]+\s*/, '').trim()).filter(l => /https?:\/\//.test(l)).map(l => {
+    const i = l.lastIndexOf('|'); return i < 0 ? { title: '', url: l.match(/https?:\/\/\S+/)[0] } : { title: l.slice(0, i).trim(), url: l.slice(i + 1).trim() };
+  });
+  return { title: m[1].trim(), summary: m[2].trim(), tags: m[3].split(',').map(s => s.trim()).filter(Boolean), sources, body: m[5].trim() + '\n' };
+}
+
+async function pageBlog(root) {
+  let filter = 'draft';
+  root.innerHTML = `<div class="stack"><section class="card"><div class="panel-head"><div><div class="panel-title">Posts</div>
+      <div class="panel-sub">Drafts are private. A post shows on rollouts.in/blogs once you publish it.</div></div>
+      <button class="btn primary" id="bNew" type="button">New post</button></div>
+    <div class="toolbar"><div class="chips" id="bChips"></div></div><div id="bList"><div class="state">Loading…</div></div></section></div>`;
+  const posts = (await api('/blog')).posts;
+  const draw = () => {
+    const n = s => posts.filter(p => !s || p.status === s).length;
+    $('#bChips').innerHTML = [['draft', 'Drafts'], ['published', 'Published'], ['', 'All']]
+      .map(([v, l]) => `<button class="chip ${v === filter ? 'on' : ''}" data-v="${v}" type="button">${l} · ${n(v)}</button>`).join('');
+    const rows = posts.filter(p => !filter || p.status === filter);
+    $('#bList').innerHTML = rows.length ? `<table><thead><tr><th>Title</th><th>Status</th><th>Updated</th></tr></thead><tbody>${rows.map(p => `
+      <tr class="click" data-id="${esc(p.id)}"><td><b>${esc(p.title)}</b><div class="muted">${esc((p.summary || '').split('\n')[0].replace(/^\s*[-*•]\s*/, ''))}</div>
+</td>
+      <td>${blogPill(p)}</td><td class="muted">${ago(p.updated_at)}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="empty">${filter === 'draft' ? 'No drafts. Start one with New post.' : 'Nothing here yet.'}</div>`;
+  };
+  listen(root, 'click', async e => {
+    const chip = e.target.closest('#bChips .chip');
+    if (chip) { filter = chip.dataset.v; draw(); return; }
+    const tr = e.target.closest('tr.click[data-id]');
+    if (tr) { location.hash = '#/blog/' + tr.dataset.id; return; }
+    if (e.target.id === 'bNew') {
+      e.target.disabled = true;
+      try { const p = await api('/blog', { method: 'POST', body: JSON.stringify({ title: 'Untitled post' }) }); location.hash = '#/blog/' + p.id; }
+      catch (err) { toast(err.message, true); e.target.disabled = false; }
+    }
+  });
+  draw();
+}
+
+async function pageBlogPost(root, id) {
+  let p = await api('/blog/' + id);
+  let dirty = false;
+  const srcText = s => (s || []).map(x => x.title ? `${x.title} | ${x.url}` : x.url).join('\n');
+  const readSources = () => $('#bSrc').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const i = l.lastIndexOf('|'); return i < 0 ? { title: '', url: l } : { title: l.slice(0, i).trim(), url: l.slice(i + 1).trim() };
+  });
+  const draw = () => {
+    const live = p.status === 'published';
+    $('#pageSub').textContent = live ? BLOG_SITE + p.slug : 'Draft, not public';
+    root.innerHTML = `<div class="stack">
+    <section class="card"><div class="panel-head"><div><div class="panel-title">Write with AI</div>
+      <div class="panel-sub">1. Type a topic and copy the prompt. 2. Paste it into Claude and send. 3. Paste Claude's whole answer below and press Fill in. Read it through before you publish.</div></div></div>
+      <div class="panel-body">
+        <div class="field"><label for="aiTopic">Topic (optional: leave empty and Claude picks something timely)</label>
+          <input class="input" id="aiTopic" placeholder="e.g. How to collect all the photos from a Diwali party"></div>
+        <button class="btn" id="aiCopy" type="button">Copy prompt</button>
+        <div class="field" style="margin-top:14px"><label for="aiPaste">Claude's answer</label>
+          <textarea class="input" id="aiPaste" style="min-height:90px" placeholder="TITLE: …"></textarea></div>
+        <button class="btn primary" id="aiFill" type="button">Fill in</button>
+      </div></section>
+    <section class="card"><div class="panel-head"><div>${blogPill(p)} <span class="muted">Updated ${ago(p.updated_at)}</span></div>
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn" href="#/blog">All posts</a>
+        <button class="btn" id="bPrev" type="button">Preview</button>
+        <button class="btn" id="bSave" type="button">Save</button>
+        ${live ? `<a class="btn" href="${esc(BLOG_SITE + p.slug)}" target="_blank" rel="noopener">View live</a><button class="btn" id="bUnpub" type="button">Unpublish</button>`
+               : '<button class="btn primary" id="bPub" type="button">Publish</button>'}
+        <button class="btn danger" id="bDel" type="button">Delete</button></div></div>
+    <div class="panel-body">
+      <div class="field"><label for="bTitle">Title</label><input class="input" id="bTitle" maxlength="200" value="${esc(p.title)}"></div>
+      <div class="field"><label for="bSlug">Address: rollouts.in/blogs/…${live ? ' (fixed once published)' : ''}</label>
+        <input class="input mono" id="bSlug" maxlength="100" value="${esc(p.slug)}" ${live ? 'disabled' : ''}></div>
+      <div class="field"><label for="bSum">Summary: 3 or 4 short points, one per line. Shown in a box under the title. <span class="count" id="bSumN"></span></label>
+        <textarea class="input" id="bSum" maxlength="600" style="min-height:100px" placeholder="One QR code gets every guest's photos into one album&#10;…">${esc(p.summary)}</textarea></div>
+      <div class="field"><label>Cover image</label>
+        <div id="bCover">${p.cover_url ? `<img src="${esc(p.cover_url)}" alt="" style="max-width:100%;max-height:220px;border-radius:var(--radius);display:block;margin-bottom:8px">` : ''}</div>
+        <input class="input" id="bCoverFile" type="file" accept="image/*">
+        ${p.cover_url ? '<button class="link-btn" id="bCoverDel" type="button" style="margin:6px 0 0">Remove cover</button>' : ''}
+        <input class="input" id="bAlt" maxlength="300" placeholder="What the cover shows (for screen readers and search)" value="${esc(p.cover_alt)}" style="margin-top:8px"></div>
+      <div class="field"><label for="bBody">Body, in Markdown: ## heading, **bold**, - list, [link](https://…)</label>
+        <div style="margin-bottom:6px"><label class="btn sm" style="display:inline-flex">Insert image<input type="file" id="bImg" accept="image/*" hidden></label></div>
+        <textarea class="input mono" id="bBody" style="min-height:460px;font-size:13px">${esc(p.body)}</textarea></div>
+      <div class="field"><label for="bTags">Tags, comma separated</label><input class="input" id="bTags" value="${esc((p.tags || []).join(', '))}"></div>
+      <div class="field"><label for="bSrc">Sources, one per line: Title | https://…</label><textarea class="input" id="bSrc" style="min-height:70px">${esc(srcText(p.sources))}</textarea></div>
+    </div></section></div>`;
+    const sumN = () => { $('#bSumN').textContent = `${$('#bSum').value.length}/600`; };
+    sumN(); $('#bSum').addEventListener('input', sumN);
+    $$('input,textarea', root).forEach(el => el.addEventListener('input', () => { dirty = true; }));
+  };
+  const fields = () => {
+    const f = { title: $('#bTitle').value, summary: $('#bSum').value, body: $('#bBody').value, cover_alt: $('#bAlt').value,
+      tags: $('#bTags').value.split(',').map(s => s.trim()).filter(Boolean), sources: readSources() };
+    if (p.status !== 'published') f.slug = $('#bSlug').value;
+    return f;
+  };
+  const save = async (quiet = false) => {
+    p = await api('/blog/' + id, { method: 'PATCH', body: JSON.stringify(fields()) });
+    dirty = false; if (!quiet) toast('Saved.'); draw();
+  };
+  const busy = async (btn, fn) => { btn.disabled = true; try { await fn(); } catch (err) { toast(err.message, true); } finally { if (btn.isConnected) btn.disabled = false; } };
+  listen(root, 'change', async e => {
+    if (e.target.id === 'bCoverFile' && e.target.files[0]) {
+      try { toast('Uploading…'); await save(true); p = await api('/blog/' + id, { method: 'PATCH', body: JSON.stringify({ cover_url: await blogUpload(e.target.files[0]) }) }); draw(); toast('Cover set.'); }
+      catch (err) { toast(err.message, true); }
+    }
+    if (e.target.id === 'bImg' && e.target.files[0]) {
+      const ta = $('#bBody'), at = ta.selectionStart;
+      try {
+        toast('Uploading…');
+        const url = await blogUpload(e.target.files[0]);
+        const alt = e.target.files[0].name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+        ta.value = ta.value.slice(0, at) + `\n\n![${alt}](${url})\n\n` + ta.value.slice(at); dirty = true;
+        toast('Image added. Change the text in [ ] to describe it.');
+      } catch (err) { toast(err.message, true); }
+      e.target.value = '';
+    }
+  });
+  listen(root, 'click', async e => {
+    const t = e.target;
+    if (t.id === 'bSave') busy(t, () => save());
+    if (t.id === 'aiCopy') {
+      const text = blogPrompt($('#aiTopic').value.trim());
+      try { await navigator.clipboard.writeText(text); toast('Prompt copied. Paste it into Claude.'); }
+      catch { $('#aiPaste').value = text; $('#aiPaste').select(); toast('Copy the prompt from the box below, then clear it.', true); }
+    }
+    if (t.id === 'aiFill') {
+      const got = blogFromAI($('#aiPaste').value);
+      if (!got) { toast("That doesn't look like Claude's answer: it should start with TITLE:", true); return; }
+      if (($('#bBody').value.trim() || '').length > 50 && !await confirmDialog({ title: 'Replace what is written?', body: 'The title, summary, tags, sources and body will be replaced with the AI answer.', confirm: 'Replace' })) return;
+      $('#bTitle').value = got.title; $('#bSum').value = got.summary; $('#bBody').value = got.body;
+      $('#bTags').value = got.tags.join(', '); $('#bSrc').value = srcText(got.sources);
+      if (p.status !== 'published' && (!p.slug || p.slug.startsWith('untitled-post'))) $('#bSlug').value = got.title;
+      $('#aiPaste').value = ''; dirty = true;
+      busy(t, () => save(true).then(() => toast('Filled in and saved as a draft. Add a cover image, read it through, then publish.')));
+    }
+    if (t.id === 'bCoverDel') busy(t, async () => { await save(true); p = await api('/blog/' + id, { method: 'PATCH', body: JSON.stringify({ cover_url: '' }) }); draw(); });
+    if (t.id === 'bPrev') busy(t, async () => {
+      await save(true);
+      const { html } = await api(`/blog/${id}/preview`);
+      const o = document.createElement('div'); o.className = 'overlay';
+      o.innerHTML = `<div style="background:var(--surface);width:100%;max-width:900px;height:92vh;display:flex;flex-direction:column;border-radius:var(--radius);overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)"><b>Preview</b><button class="btn sm" type="button" data-close>Close</button></div>
+        <iframe sandbox="allow-popups" style="flex:1;border:0;width:100%;background:#fff"></iframe></div>`;
+      $('iframe', o).srcdoc = html;
+      o.addEventListener('click', ev => { if (ev.target === o || ev.target.dataset.close !== undefined) o.remove(); });
+      document.body.appendChild(o);
+    });
+    if (t.id === 'bPub') busy(t, async () => {
+      await save(true);
+      if (!await confirmDialog({ title: 'Publish this post?', body: `It goes live at ${esc(BLOG_SITE + p.slug)} within a few minutes, and the address can't change after this.`, confirm: 'Publish' })) return;
+      p = await api(`/blog/${id}/publish`, { method: 'POST' }); draw(); toast('Published.');
+    });
+    if (t.id === 'bUnpub') busy(t, async () => {
+      if (!await confirmDialog({ title: 'Unpublish?', body: 'The post goes back to drafts and its page stops working within a few minutes.', confirm: 'Unpublish' })) return;
+      p = await api(`/blog/${id}/unpublish`, { method: 'POST' }); draw(); toast('Back to drafts.');
+    });
+    if (t.id === 'bDel') busy(t, async () => {
+      if (!await confirmDialog({ title: 'Delete this post?', body: 'This cannot be undone.', confirm: 'Delete', danger: true })) return;
+      await api('/blog/' + id, { method: 'DELETE' }); toast('Deleted.'); dirty = false; location.hash = '#/blog';
+    });
+    if (t.closest('a[href="#/blog"]') && dirty) {
+      e.preventDefault();
+      if (await confirmDialog({ title: 'Leave without saving?', body: 'Your changes to this post will be lost.', confirm: 'Leave' })) location.hash = '#/blog';
+    }
+  });
+  draw();
+}
+
 /* ═══════════════ SHELL ═══════════════ */
 const SECTIONS = {
   overview: ['Overview', 'Everything at a glance', pageOverview],
   users: ['Users', 'Everyone who has opened the app', pageUsers],
   rooms: ['Rooms', 'Every event', pageRooms],
+  planned: ['Planned events', '"Happening later": events people plan to create, and their reminders', pagePlanned],
   revenue: ['Revenue', 'Paid events and upgrades', pageRevenue],
   push: ['Push notifications', 'Send your own message to rooms or people', pagePush],
+  outreach: ['Outreach', 'Leads to message on WhatsApp, 30 a day', pageOutreach],
+  blog: ['Blog', 'Posts for rollouts.in/blogs', pageBlog],
   services: ['Services', 'Every running piece, and whether it is working', pageServices],
   logs: ['Logs', 'What every service is saying, newest last', root => pageLogs(root, '')],
   app: ['App version', 'Force updates and maintenance mode for the mobile app', pageApp],
@@ -1230,6 +1749,7 @@ async function route() {
   try {
     if (id && key === 'users') await pageUser(root, id);
     else if (id && key === 'rooms') await pageRoom(root, id);
+    else if (id && key === 'blog') await pageBlogPost(root, id);
     else if (key === 'logs') await pageLogs(root, id);
     else await fn(root);
   } catch (e) {
@@ -1281,6 +1801,7 @@ $$('[data-theme-toggle]').forEach(b => b.addEventListener('click', () => applyTh
 applyTheme(document.documentElement.dataset.theme === 'dark');
 $('#menuBtn').addEventListener('click', () => document.body.classList.toggle('nav-open'));
 $('#navBackdrop').addEventListener('click', () => document.body.classList.remove('nav-open'));
+$('#closeSidebarBtn').addEventListener('click', () => document.body.classList.remove('nav-open'));
 // Close sidebar when a nav link is tapped on mobile
 $$('#nav a').forEach(a => a.addEventListener('click', () => document.body.classList.remove('nav-open')));
 $('#refreshBtn').addEventListener('click', route);

@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /admin
+Disallow: /upload
+
+Sitemap: https://rollouts.in/sitemap.xml

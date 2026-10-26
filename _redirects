@@ -1,1 +1,17 @@
-/api/waitlist  https://groupsnap-backend-production.up.railway.app/waitlist  200
+/api/waitlist       https://api.rollouts.in/waitlist  200
+/api/invite/*       https://api.rollouts.in/public/invite/:splat  200
+
+# The blog: the backend keeps the posts (in R2) and returns finished HTML, so search engines and
+# AI search read them without running scripts. Posts are written and published in /admin > Blog.
+/blogs              https://api.rollouts.in/public/blog            200
+/blogs/*            https://api.rollouts.in/public/blog/:splat     200
+/sitemap.xml        https://api.rollouts.in/public/sitemap.xml     200
+
+# Only ever actually loads when Android App Links / iOS Universal Links
+# didn't intercept the tap natively (no app installed, or an in-app browser
+# suppressing the hand-off) — see plan/... room-invite-deep-linking.
+/join/*             /join.html                              200
+
+# How it works is a section of the home page now.
+/how-it-works.html  /#how-it-works  301
+/how-it-works       /#how-it-works  301
