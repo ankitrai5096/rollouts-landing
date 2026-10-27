@@ -240,15 +240,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .seg button.on { background: var(--primary); color: var(--on-primary); }
 .seg button.cur:not(.on) { color: var(--text); }
 
-/* media */
-.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; padding: 14px 18px 18px; }
-.tile { position: relative; aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: var(--grey-bg); cursor: zoom-in; }
-.tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tile .badge { position: absolute; left: 6px; bottom: 6px; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius); }
-.tile .del { position: absolute; right: 6px; top: 6px; background: rgba(0,0,0,.65); color: #fff; border: none; border-radius: var(--radius); font-size: 11.5px; font-weight: 700; padding: 3px 8px; opacity: 0; transition: opacity .15s; }
-.tile:hover .del, .tile:focus-within .del { opacity: 1; }
-@media (hover: none) { .tile .del { opacity: 1; } }
-
 /* chart */
 .chart-wrap { position: relative; padding: 6px 18px 4px; }
 .chart-wrap svg { display: block; width: 100%; height: 280px; overflow: visible; }
@@ -262,16 +253,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .tip i { width: 10px; height: 3px; border-radius: var(--radius); display: inline-block; }
 .tip b { font-variant-numeric: tabular-nums; }
 
-/* modal, lightbox, toasts */
+/* modal, toasts */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
 .modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 440px; padding: 22px; border: 1px solid var(--border); }
 .modal h4 { font-size: 17px; margin-bottom: 6px; }
 .modal p { color: var(--sub); font-size: 13.5px; margin-bottom: 14px; }
 .modal .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: flex; align-items: center; justify-content: center; z-index: 70; padding: 16px; }
-.lightbox img, .lightbox video { max-width: 100%; max-height: 86vh; border-radius: var(--radius); }
-.lightbox .bar { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; }
-.lightbox .cap { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: #ddd; font-size: 12.5px; }
 #toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 80; }
 .toast { background: var(--primary); color: var(--on-primary); padding: 10px 14px; border-radius: var(--radius); font-size: 13px; max-width: 360px; }
 .toast.err { background: var(--red); color: #fff; }
@@ -429,7 +416,7 @@ function ago(d) {
   return fmtDate(d);
 }
 const initials = n => (n || '?').split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || '?';
-const avatar = u => { const src = u && (u.face_crop_uri || u.avatar_url);
+const avatar = u => { const src = u && u.avatar_url;
   return `<div class="avatar">${src ? `<img src="${esc(src)}" alt="" loading="lazy">` : esc(initials(u && u.name))}</div>`; };
 const TIER = { normal: ['Free', ''], large: ['Large', 'blue'], extra_large: ['Extra Large', 'violet'], organised: ['Organised (legacy)', 'blue'] };
 // Rooms store an icon name from the app ('suitcase'); older ones an emoji. Names without a
@@ -736,9 +723,6 @@ async function pageRoom(root, id) {
     <section class="card"><div class="panel-head"><div><div class="panel-title">Activity</div><div class="panel-sub">Who did what in this event, newest first: the creator, organisers and the Rollout admin.</div></div></div>
       <div id="act"><div class="state">Loading…</div></div></section>
     ${d.payments.length ? `<section class="card"><div class="panel-head"><div class="panel-title">Payments for this event</div></div><div class="panel-body" style="padding:8px 0 0">${paymentsTable(d.payments, { hideRoom: true })}</div></section>` : ''}
-    <section class="card"><div class="panel-head"><div><div class="panel-title">Media</div><div class="panel-sub">Newest first. Tap to open; delete removes the file for everyone.</div></div>
-      <div class="chips" id="mediaKind"><button class="chip on" data-v="photo" type="button">Photos (${fmt(c.photos)})</button><button class="chip" data-v="video" type="button">Videos (${fmt(c.videos)})</button></div></div>
-      <div id="media"><div class="state">Loading…</div></div></section>
   </div>`;
 
   // tier
@@ -811,36 +795,6 @@ async function pageRoom(root, id) {
     catch (err) { toast(err.message, true); }
   });
 
-  // media
-  let kind = 'photo', page = 1;
-  const loadMedia = async () => {
-    const box = $('#media'); if (!box) return;
-    box.innerHTML = '<div class="state">Loading…</div>';
-    const m = await api(`/rooms/${id}/media?kind=${kind}&page=${page}`);
-    if (!m.items.length) { box.innerHTML = `<div class="empty">No ${kind}s.</div>`; return; }
-    box.innerHTML = `<div class="media-grid">${m.items.map(p => `<div class="tile" data-id="${p.id}" tabindex="0">
-      ${p.is_video ? `<video src="${esc(p.video_lq_uri || p.uri)}#t=0.5" preload="metadata" muted playsinline></video><span class="badge">▶ ${p.video_duration ? Math.round(p.video_duration) + 's' : 'video'}</span>`
-        : `<img src="${esc(p.thumb_uri || p.uri)}" alt="" loading="lazy">`}
-      <button class="del" data-del="${p.id}" type="button">Delete</button></div>`).join('')}</div>${pager(m, p => { page = p; loadMedia(); })}`;
-    const byId = Object.fromEntries(m.items.map(p => [p.id, p]));
-    $$('.tile', box).forEach(t => t.addEventListener('click', async ev => {
-      const p = byId[t.dataset.id];
-      if (ev.target.dataset.del) {
-        ev.stopPropagation();
-        const ok = await confirmDialog({ title: `Delete this ${p.is_video ? 'video' : 'photo'}?`, danger: true, confirm: 'Delete',
-          body: `Uploaded by ${esc(p.uploader?.name || 'someone')} on ${fmtDT(p.created_at)}. It is removed for everyone and can't be recovered.` });
-        if (!ok) return;
-        try { const res = await api('/photos/' + p.id, { method: 'DELETE' }); toast(res.file_errors ? 'Deleted, but a file could not be removed from storage (see server logs).' : 'Deleted.', !!res.file_errors); t.remove(); }
-        catch (err) { toast(err.message, true); }
-        return;
-      }
-      lightbox(p);
-    }));
-  };
-  $('#mediaKind').addEventListener('click', e => { if (!e.target.dataset.v) return; kind = e.target.dataset.v; page = 1;
-    $$('#mediaKind .chip').forEach(ch => ch.classList.toggle('on', ch === e.target)); loadMedia(); });
-  loadMedia();
-
   // activity history
   // 10 entries at a time; "Show more" adds 10 more, so a busy event's card stays short.
   const ACT_PAGE = 10;
@@ -858,18 +812,6 @@ async function pageRoom(root, id) {
     catch (e) { actBox.innerHTML = `<div class="empty">Couldn't load the history: ${esc(e.message)}</div>`; }
   };
   loadActivity();
-}
-
-function lightbox(p) {
-  const o = document.createElement('div'); o.className = 'lightbox';
-  o.innerHTML = `${p.is_video ? `<video src="${esc(p.uri)}" controls autoplay playsinline></video>` : `<img src="${esc(p.uri)}" alt="">`}
-    <div class="bar"><a class="btn sm" href="${esc(p.uri)}" target="_blank" rel="noopener">Open original</a><button class="btn sm" type="button" data-x>Close</button></div>
-    <div class="cap">${esc(p.uploader?.name || 'Unknown')} · ${fmtDT(p.created_at)}</div>`;
-  document.body.appendChild(o);
-  const close = () => { o.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = e => { if (e.key === 'Escape') close(); };
-  document.addEventListener('keydown', onKey);
-  o.addEventListener('click', e => { if (e.target === o || e.target.dataset.x !== undefined) close(); });
 }
 
 /* ═══════════════ REVENUE ═══════════════ */

@@ -445,7 +445,7 @@ function dur(sec) {
   return `${Math.floor(sec / 3600)}h ${Math.round((sec % 3600) / 60)}m`;
 }
 const initials = n => (n || '?').split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || '?';
-const avatar = (u, cls = '') => { const src = u.face_crop_uri || u.avatar_url;
+const avatar = (u, cls = '') => { const src = u.avatar_url;
   return `<div class="avatar ${cls}">${src ? `<img src="${esc(src)}" alt="">` : initials(u.name)}</div>`; };
 const userName = u => u.name ? esc(u.name) : (u.device_id ? `<span class="mono" style="font-size:12px;color:var(--sub)">${esc(u.device_id.slice(-10))}</span>` : 'User');
 const icons = () => window.lucide && lucide.createIcons();
@@ -560,7 +560,7 @@ async function openUser(id) {
     const rooms = (u.rooms || []).length ? u.rooms.map(r => `<div class="d-row" data-room="${esc(r.id)}">
       <div class="d-row-info"><div class="d-row-name">${esc(r.name || 'Unnamed')}</div><div class="d-row-sub">${fmt(r.photo_count)} photos · joined ${fmtDate(r.joined_at)}</div></div>
       <i data-lucide="chevron-right"></i></div>`).join('') : '<div class="d-empty">No rooms joined yet.</div>';
-    const src = u.face_crop_uri || u.avatar_url;
+    const src = u.avatar_url;
     openDrawer(`<div class="d-header"><div class="d-avatar">${src ? `<img src="${esc(src)}" alt="">` : initials(u.name)}</div>
       <div><div class="d-name">${esc(u.name || 'User')}</div>${u.device_id ? `<div class="d-sub mono">${esc(u.device_id)}</div>` : ''}<div class="d-sub">Signed up ${fmtDate(u.created_at)}</div></div></div>
       <div class="d-badges">${u.face_registered ? pill('Face registered', 'green') : pill('No face registered')}</div>
